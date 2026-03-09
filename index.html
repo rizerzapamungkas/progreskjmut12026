@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard Progres</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --bg-color: #f1f5f9; --text-main: #0f172a; --text-dim: #475569; }
+        body { font-family: 'Inter', system-ui, sans-serif; background-color: var(--bg-color); padding: 40px; display: flex; justify-content: center; }
+        .dashboard-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; width: 100%; max-width: 1200px; }
+        .card { background: white; padding: 25px; border-radius: 16px; border: 1px solid #e2e8f0; }
+        .status-box { grid-column: span 2; } 
+        .process-container { grid-column: span 2; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; } 
+        .stat-value { font-size: 2rem; font-weight: 800; color: var(--text-main); margin: 0; text-align: center; }
+       h3 { 
+            font-size: 1rem; 
+            color: var(--text-dim); 
+            text-transform: uppercase; 
+            margin: 0 0 10px 0; 
+            letter-spacing: 0.05em; 
+            text-align: center;
+        }
+        .status-item { font-size: 1.2rem; padding: 6px 0; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { text-align: left; color: #64748b; font-size: 0.75rem; padding: 12px; border-bottom: 2px solid #e2e8f0; cursor: pointer; }
+        td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; }
+        .table-half { grid-column: span 2; }
+        .big-percentage {
+            font-size: 4.5rem !important;
+            font-weight: 900;
+            color: #1e293b;
+            margin-top: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <script id="api-config">
+        const CONFIG = {
+            url: 'https://fmbbktdjcsveihocgfjj.supabase.co',
+            key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZtYmJrdGRqY3N2ZWlob2NnZmpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5OTk5NzIsImV4cCI6MjA4ODU3NTk3Mn0.Esh5t2_gf16MO6ISxawYsoigOqSUl0-3oDi0SiSFzoQ'
+        };
+    </script>
+
+    <div class="dashboard-container">
+        <div class="card"><h3>Total Mahasiswa</h3><p class="stat-value" id="total-mhs">--</p></div>
+        <div class="card"><h3>Total Perguruan Tinggi</h3><p class="stat-value" id="total-univ">--</p></div>
+        <div class="card"><h3>Total PTN</h3><p class="stat-value" id="total-ptn">--</p></div>
+        <div class="card"><h3>Total PTS</h3><p class="stat-value" id="total-pts">--</p></div>
+        
+        <div class="card status-box">
+            <h3>Status Pendataan</h3>
+            <div class="status-item">Verifikasi Lanjutan dan Upload Berkas <b><span id="s1">0</span></b></div>
+            <div class="status-item">Verifikasi Perguruan Tinggi <b><span id="s2">0</span></b></div>
+            <div class="status-item">Persetujuan Pimpinan Perguruan Tinggi <b><span id="s3">0</span></b></div>
+            <div class="status-item">Verifikasi Dinas Pendidikan <b><span id="s4">0</span></b></div>
+        </div>
+        
+        <div class="process-container">
+            <div class="card">
+                <h3>Upload Berkas</h3>
+                <p class="stat-value big-percentage" id="proc-1">--%</p>
+            </div>
+            <div class="card">
+                <h3>Verif PT</h3>
+                <p class="stat-value big-percentage" id="proc-2">--%</p>
+            </div>
+        </div>
+
+        <div class="card table-half">
+            <h3>Upload Berkas per Perguruan Tinggi</h3>
+            <div style="max-height: 400px; overflow-y: auto;">
+                <table>
+                    <thead><tr>
+                        <th>Nama Universitas</th>
+                        <th onclick="sortT1('belum_upload')">Belum ↕</th>
+                        <th onclick="sortT1('sudah_upload')">Sudah ↕</th>
+                        <th onclick="sortT1('progres')">Progres ↕</th>
+                    </tr></thead>
+                    <tbody id="univ-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card table-half">
+            <h3>Proses Verifikasi per Perguruan Tinggi</h3>
+            <div style="max-height: 400px; overflow-y: auto;">
+                <table>
+                    <thead><tr>
+                        <th>Nama Universitas</th>
+                        <th onclick="sortT2('total_data')">Total ↕</th>
+                        <th onclick="sortT2('sudah_verif')">Sudah ↕</th>
+                        <th onclick="sortT2('progres')">Progres ↕</th>
+                    </tr></thead>
+                    <tbody id="verif-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script id="main-logic">
+        let dataT1 = [], dataT2 = [];
+        let ascT1 = false, ascT2 = false;
+        const db = supabase.createClient(CONFIG.url, CONFIG.key);
+
+        function renderT1() {
+            document.getElementById('univ-table-body').innerHTML = dataT1.map(row => `
+                <tr>
+                    <td>${row.NAMA_UNIVERSITAS}</td>
+                    <td style="color:#e11d48; font-weight:bold;">${row.belum_upload}</td>
+                    <td style="color:#16a34a; font-weight:bold;">${row.sudah_upload}</td>
+                    <td style="font-weight:bold;">${row.progres.toFixed(1)}%</td>
+                </tr>
+            `).join('');
+        }
+
+        function renderT2() {
+            document.getElementById('verif-table-body').innerHTML = dataT2.map(row => `
+                <tr>
+                    <td>${row.NAMA_UNIVERSITAS}</td>
+                    <td style="color:#475569; font-weight:bold;">${row.total_data}</td>
+                    <td style="color:#2563eb; font-weight:bold;">${row.sudah_verif}</td>
+                    <td style="font-weight:bold;">${row.progres.toFixed(1)}%</td>
+                </tr>
+            `).join('');
+        }
+
+        function sortT1(col) {
+            ascT1 = !ascT1;
+            dataT1.sort((a, b) => ascT1 ? a[col] - b[col] : b[col] - a[col]);
+            renderT1();
+        }
+
+        function sortT2(col) {
+            ascT2 = !ascT2;
+            dataT2.sort((a, b) => ascT2 ? a[col] - b[col] : b[col] - a[col]);
+            renderT2();
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const res = await db.from('view_statistik_univ').select('*').single();
+            if (res.data) {
+                const d = res.data;
+                document.getElementById('total-mhs').innerText = d.total_mhs.toLocaleString();
+                document.getElementById('total-univ').innerText = d.total_univ.toLocaleString();
+                document.getElementById('total-ptn').innerText = d.total_ptn.toLocaleString();
+                document.getElementById('total-pts').innerText = d.total_pts.toLocaleString();
+                document.getElementById('s1').innerText = d.status_1.toLocaleString();
+                document.getElementById('s2').innerText = d.status_2.toLocaleString();
+                document.getElementById('s3').innerText = d.status_3.toLocaleString();
+                document.getElementById('s4').innerText = d.status_4.toLocaleString();
+                document.getElementById('proc-1').innerText = (d.proses_upload || 0).toFixed(2) + '%';
+                document.getElementById('proc-2').innerText = (d.proses_verif_pt || 0).toFixed(2) + '%';
+            }
+
+            const t1 = await db.from('view_univ_upload_status').select('*');
+            if (t1.data) {
+                // Tambahkan perhitungan progres ke setiap baris
+                dataT1 = t1.data.map(row => ({
+                    ...row, 
+                    progres: (row.belum_upload + row.sudah_upload) > 0 ? (row.sudah_upload / (row.belum_upload + row.sudah_upload)) * 100 : 0
+                }));
+                renderT1();
+            }
+
+            const t2 = await db.from('view_univ_verif_status').select('*');
+            if (t2.data) {
+                // Tambahkan perhitungan progres ke setiap baris
+                dataT2 = t2.data.map(row => ({
+                    ...row,
+                    progres: row.total_data > 0 ? (row.sudah_verif / row.total_data) * 100 : 0
+                }));
+                renderT2();
+            }
+        });
+    </script>
+</body>
+</html>
