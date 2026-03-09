@@ -74,9 +74,46 @@ th { vertical-align: middle !important; text-align: center !important; font-size
             letter-spacing: -0.025em;
             font-variant-numeric: tabular-nums; /* Biar angka nggak geser-geser pas loading */
         }
+        /* Overlay loading di tengah layar */
+#global-loader {
+    position: fixed;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(4px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    transition: opacity 0.3s ease;
+}
+
+/* Animasi Spinner Pop-out */
+.spinner-pop {
+    width: 60px;
+    height: 60px;
+    border: 6px solid #f3f3f3;
+    border-top: 6px solid #1e293b; /* Warna Slate-900 */
+    border-radius: 50%;
+    animation: spin 1s linear infinite, popOut 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes popOut {
+    0% { transform: scale(0); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
     </style>
 </head>
 <body class="antialiased">
+    <div id="global-loader">
+    <div class="spinner-pop"></div>
+    <p class="mt-4 text-slate-900 font-black uppercase tracking-widest text-xs animate-pulse">Memuat Data...</p>
+</div>
     <div class="max-w-[1600px] mx-auto px-6 py-8">
         <div class="flex flex-col lg:flex-row justify-between items-center gap-8 mb-10">
             <div class="flex items-center gap-7 w-full lg:w-auto">
@@ -533,10 +570,21 @@ th { vertical-align: middle !important; text-align: center !important; font-size
 // ... (setelah loop allStats selesai) ...
         globalKampusData = kampusMap; // Simpan ke global
         renderTables(); // Panggil fungsi render
-    } catch (e) {
-        console.error("Stats Error:", e);
-    }
-}
+    const loader = document.getElementById('global-loader');
+                if (loader) {
+                    loader.style.opacity = '0';
+                    setTimeout(() => {
+                        loader.style.display = 'none';
+                    }, 300); // 300ms itu biar transisinya halus
+                }
+
+            } catch (err) {
+                console.error("Gagal update stats:", err);
+                // Kalau error pun loader harus hilang biar gak nutupin layar terus
+                const loader = document.getElementById('global-loader');
+                if (loader) loader.style.display = 'none';
+            }
+        }
 // Simpan data secara global agar bisa di-sort ulang tanpa fetch ulang
 let globalKampusData = {};
 let sortDirections = {
