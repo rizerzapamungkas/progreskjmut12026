@@ -115,10 +115,10 @@ th { vertical-align: middle !important; text-align: center !important; font-size
     <p class="mt-4 text-slate-900 font-black uppercase tracking-widest text-xs animate-pulse">Memuat Data...</p>
 </div>
     <div class="max-w-[1600px] mx-auto px-6 py-8">
-        <div class="flex flex-col lg:flex-row justify-between items-center gap-8 mb-10">
+        <div class="flex flex-col lg:flex-row justify-between items-center gap-8 mb-4">
             <div class="flex items-center gap-7 w-full lg:w-auto">
                 <img src="https://i.imgur.com/7QcgJj0.png" alt="Logo" class="hidden lg:block h-20 w-auto object-contain">
-                <div class="mb-10">
+                <div class="mb-4">
                     <h1 class="text-3xl font-black text-slate-900 tracking-tighter uppercase">
                         Dashboard Monitoring Pendataan
                     </h1>
@@ -266,6 +266,9 @@ th { vertical-align: middle !important; text-align: center !important; font-size
         <label class="block text-[20px] font-black text-slate-700 uppercase tracking-widest mb-3 text-center">
             Status Upload Berkas Per Kampus
         </label>
+        <p class="text-[14px] font-bold text-slate-400 uppercase tracking-wider text-center mb-4">
+            (Klik pada kolom untuk filter terbesar dan terkecil)
+        </p>
         <div class="max-h-[300px] overflow-y-auto border border-slate-100 rounded-xl">
             <table class="w-full text-left border-collapse">
                 <thead class="sticky top-0 z-10 bg-slate-50 shadow-sm">
@@ -287,11 +290,14 @@ th { vertical-align: middle !important; text-align: center !important; font-size
         <label class="block text-[20px] font-black text-slate-700 uppercase tracking-widest mb-3 text-center">
             Status Verifikasi Per Kampus
         </label>
+        <p class="text-[14px] font-bold text-slate-400 uppercase tracking-wider text-center mb-4">
+            (Klik pada kolom untuk filter terbesar dan terkecil)
+        </p>
         <div class="max-h-[300px] overflow-y-auto border border-slate-100 rounded-xl">
             <table class="w-full text-left border-collapse">
                 <thead class="sticky top-0 z-10 bg-slate-50 shadow-sm">
                     <tr class="border-b border-slate-100">
-                        <th class="p-1 text-[11px] font-black text-slate-500 uppercase tracking-wider">Nama Universitas</th>
+                        <th class="p-1 text-[11px] font-black text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-200" onclick="sortTable('verif', 'penerima')">Nama Universitas</th>
                         <th class="p-1 text-[11px] font-black text-slate-500 uppercase tracking-wider text-center w-16 cursor-pointer hover:bg-slate-200" onclick="sortTable('verif', 'penerima')">Jumlah</th>
                         <th class="p-1 text-[11px] font-black text-orange-500 uppercase tracking-wider text-center w-16 cursor-pointer hover:bg-slate-200" onclick="sortTable('verif', 'verifBelum')">Belum</th>
                         <th class="p-1 text-[11px] font-black text-blue-600 uppercase tracking-wider text-center w-16 cursor-pointer hover:bg-slate-200" onclick="sortTable('verif', 'verifSudah')">Sudah</th>
@@ -854,5 +860,6 @@ function sortTable(type, key) {
     </script>
 </body>
 </html>
+
 
 
