@@ -775,27 +775,43 @@ function sortTable(type, key) {
 }
 
         async function initFilters() {
-            try {
-                const { data, error } = await supabaseClient.from(TABLE_NAME).select('NAMA_UNIVERSITAS');
-                if (error) throw error;
+    try {
+        // Memanggil function SQL yang kita buat di step 1
+        const { data, error } = await supabaseClient
+            .rpc('get_unique_universities');
 
-                const uniqueUniv = [...new Set(data.filter(i => i.NAMA_UNIVERSITAS).map(item => item.NAMA_UNIVERSITAS))].sort();
-                const selectEl = document.getElementById('uni-filter');
-                selectEl.innerHTML = '<option value="">Semua Perguruan Tinggi...</option>';
-                uniqueUniv.forEach(u => { 
-                    const opt = document.createElement('option'); 
-                    opt.value = u; 
-                    opt.textContent = u; 
-                    selectEl.appendChild(opt); 
-                });
+        if (error) throw error;
 
-                if(tsSelector) tsSelector.destroy();
-                tsSelector = new TomSelect("#uni-filter", { 
-                    create: false, 
-                    onChange: () => { currentPage = 0; fetchData(); } 
-                });
-            } catch (e) { console.error("Filter Error:", e); }
+        if (!data || data.length === 0) {
+            console.warn("Tidak ada data universitas ditemukan.");
+            return;
         }
+
+        const selectEl = document.getElementById('uni-filter');
+        selectEl.innerHTML = '<option value="">Semua Perguruan Tinggi...</option>';
+        
+        data.forEach(item => { 
+            const opt = document.createElement('option'); 
+            // Sesuaikan nama kolom hasil RPC (nama_univ)
+            opt.value = item.nama_univ; 
+            opt.textContent = item.nama_univ; 
+            selectEl.appendChild(opt); 
+        });
+
+        // Refresh TomSelect
+        if(tsSelector) tsSelector.destroy();
+        tsSelector = new TomSelect("#uni-filter", { 
+            create: false, 
+            maxOptions: 500, // Pastikan limit TomSelect cukup besar
+            onChange: () => { currentPage = 0; fetchData(); } 
+        });
+
+        console.log("Total Kampus Terload:", data.length);
+
+    } catch (e) { 
+        console.error("Filter Error:", e); 
+    }
+}
 
         async function fetchData() {
             const body = document.getElementById('data-table-body');
