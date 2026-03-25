@@ -897,51 +897,76 @@ function sortTable(type, key) {
         }
 
         async function downloadExcel() {
-            const btn = document.getElementById('download-btn');
-            if (!btn) return;
-            btn.innerText = "LOADING..."; 
-            btn.disabled = true;
+    const btn = document.getElementById('download-btn');
+    if (!btn) return;
+    
+    // Ubah status tombol agar user tahu proses sedang berjalan
+    btn.innerText = "MENGAMBIL DATA..."; 
+    btn.disabled = true;
 
-            try {
-                const selectedUni = document.getElementById('uni-filter').value;
-                const fUpload = document.getElementById('filter-upload').value;
-                const fVerif = document.getElementById('filter-verif').value;
+    try {
+        const selectedUni = document.getElementById('uni-filter').value;
+        const fUpload = document.getElementById('filter-upload').value;
+        const fVerif = document.getElementById('filter-verif').value;
 
-                let query = supabaseClient.from(TABLE_NAME).select('*');
-                if (selectedUni) query = query.eq('NAMA_UNIVERSITAS', selectedUni);
-                
-                if (fUpload === 'SUDAH') query = query.neq('nm_status', 'Verifikasi Lanjutan dan Upload Berkas');
-                if (fUpload === 'BELUM') query = query.eq('nm_status', 'Verifikasi Lanjutan dan Upload Berkas');
-                if (fVerif === 'SUDAH') query = query.eq('nm_status', 'Persetujuan Pimpinan Perguruan Tinggi');
-                if (fVerif === 'BELUM') query = query.neq('nm_status', 'Persetujuan Pimpinan Perguruan Tinggi');
+        let allData = [];
+        let keepFetching = true;
+        let from = 0;
+        const step = 1000; // Tarik data per 1000 baris
 
-                const { data, error } = await query;
-                if (error) throw error;
+        // --- PROSES LOOPING UNTUK MENEMBUS LIMIT 1000 ---
+        while (keepFetching) {
+            let query = supabaseClient.from(TABLE_NAME).select('*');
+            
+            // Terapkan filter yang aktif di UI
+            if (selectedUni) query = query.eq('NAMA_UNIVERSITAS', selectedUni);
+            if (fUpload === 'SUDAH') query = query.neq('nm_status', 'Verifikasi Lanjutan dan Upload Berkas');
+            if (fUpload === 'BELUM') query = query.eq('nm_status', 'Verifikasi Lanjutan dan Upload Berkas');
+            if (fVerif === 'SUDAH') query = query.eq('nm_status', 'Persetujuan Pimpinan Perguruan Tinggi');
+            if (fVerif === 'BELUM') query = query.neq('nm_status', 'Persetujuan Pimpinan Perguruan Tinggi');
 
-                if (data && data.length > 0) {
-                    const exportData = data.map(row => ({
-                        "NAMA MAHASISWA": row.NAMA_SISWA,
-                        "NIM": row.NIM,
-                        "UNIVERSITAS": row.NAMA_UNIVERSITAS,
-                        "PRODI": row.PRODI,
-                        "BERKAS": checkUpload(row.nm_status) ? "SUDAH" : "BELUM",
-                        "VERIF KAMPUS": checkVerif(row.nm_status) ? "SUDAH" : "BELUM",
-                        "STATUS SISTEM": row.nm_status
-                    }));
-                    const ws = XLSX.utils.json_to_sheet(exportData);
-                    const wb = XLSX.utils.book_new();
-                    XLSX.utils.book_append_sheet(wb, ws, "Progress");
-                    XLSX.writeFile(wb, `Laporan_Progres_${new Date().getTime()}.xlsx`);
-                } else {
-                    alert("Tidak ada data untuk diunduh");
-                }
-            } catch (err) {
-                console.error("Download error:", err);
-                alert("Gagal mengunduh berkas");
-            } finally {
-                btn.innerText = "DOWNLOAD EXCEL"; 
-                btn.disabled = false;
+            // Ambil data berdasarkan range saat ini
+            const { data, error } = await query.range(from, from + step - 1);
+            
+            if (error) throw error;
+
+            if (data && data.length > 0) {
+                allData = [...allData, ...data];
+                from += step;
+                // Jika data yang didapat kurang dari 1000, berarti ini halaman terakhir
+                if (data.length < step) keepFetching = false;
+            } else {
+                keepFetching = false;
             }
+        }
+
+        // --- PROSES GENERATE EXCEL ---
+        if (allData.length > 0) {
+            const exportData = allData.map(row => ({
+                "NAMA MAHASISWA": row.NAMA_SISWA,
+                "NIM": row.NIM,
+                "UNIVERSITAS": row.NAMA_UNIVERSITAS,
+                "PRODI": row.PRODI,
+                "STATUS BERKAS": checkUpload(row.nm_status) ? "SUDAH" : "BELUM",
+                "VERIF KAMPUS": checkVerif(row.nm_status) ? "SUDAH" : "BELUM",
+                "STATUS SISTEM": row.nm_status
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Progress");
+            XLSX.writeFile(wb, `Laporan_KJMU_Full_${new Date().getTime()}.xlsx`);
+        } else {
+            alert("Tidak ada data untuk diunduh");
+        }
+    } catch (err) {
+        console.error("Download error:", err);
+        alert("Gagal mengunduh berkas: " + err.message);
+    } finally {
+        btn.innerText = "DOWNLOAD EXCEL"; 
+        btn.disabled = false;
+    }
+}
         }
 
         document.addEventListener('DOMContentLoaded', () => { 
