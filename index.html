@@ -175,7 +175,7 @@ th { vertical-align: middle !important; text-align: center !important; font-size
             
             <div class="flex flex-col md:flex-row gap-4 w-full lg:w-auto">
                 <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm w-full md:w-40 flex flex-col items-center text-center">
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">UPLOAD BERKAS</p>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">SUDAH VERIFIKASI</p>
                     <span id="percent-upload" class="text-2xl font-black text-emerald-600 mb-3">0.00%</span>
                     <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
                         <div id="bar-upload" class="bg-emerald-500 h-full transition-all duration-1000" style="width: 0%"></div>
@@ -183,10 +183,10 @@ th { vertical-align: middle !important; text-align: center !important; font-size
                 </div>
 
                 <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm w-full md:w-40 flex flex-col items-center text-center">
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">VERIFIKASI KAMPUS</p>
-                    <span id="percent-verif" class="text-2xl font-black text-blue-600 mb-3">0.00%</span>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">BELUM VERIFIKASI</p>
+                    <span id="percent-verif" class="text-2xl font-black text-rose-600 mb-3">0.00%</span>
                     <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
-                        <div id="bar-verif" class="bg-blue-600 h-full transition-all duration-1000" style="width: 0%"></div>
+                        <div id="bar-verif" class="bg-rose-600 h-full transition-all duration-1000" style="width: 0%"></div>
                     </div>
                 </div>
             </div>
@@ -593,16 +593,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // --- REVISI LOGIKA PERSENTASE ---
 
-                // 1. Progress Upload Berkas (Data yang sudah lewat tahap awal / Total Mahasiswa)
-                const sudahUpload = totalMhs - s1;
-                const p1 = totalMhs > 0 ? ((sudahUpload / totalMhs) * 100).toFixed(2) : "0.00";
-
-                // 2. Progress Verifikasi (REVISI: Persetujuan Pimpinan / Total Mahasiswa)
-                // Menghitung berapa banyak yang sudah di tahap Persetujuan Pimpinan dari total semua mahasiswa
+                // 1. Progress Sudah Verifikasi (Data status Persetujuan Pimpinan / Total Mahasiswa)
                 const dataSetujuPimpinan = allStats.filter(r => r.nm_status === "Persetujuan Pimpinan Perguruan Tinggi").length;
+                const p1 = totalMhs > 0 ? ((dataSetujuPimpinan / totalMhs) * 100).toFixed(2) : "0.00";
 
-                // Rumus: (Persetujuan Pimpinan / Total Mahasiswa) * 100
-                const p2 = totalMhs > 0 ? ((dataSetujuPimpinan / totalMhs) * 100).toFixed(2) : "0.00";
+                // 2. Progress Belum Verifikasi (Sisanya / Total Mahasiswa)
+                const dataBelumVerif = totalMhs - dataSetujuPimpinan;
+                const p2 = totalMhs > 0 ? ((dataBelumVerif / totalMhs) * 100).toFixed(2) : "0.00";
 
                 // Update UI Angka Persen
                 document.getElementById('percent-upload').innerText = p1 + '%';
@@ -1024,6 +1021,3 @@ function sortTable(type, key) {
     </script>
 </body>
 </html>
-
-
-
