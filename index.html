@@ -288,7 +288,11 @@
 
                 // Box 2 Stats & Table Logic
                 const belumVerif = progresData.filter(r => r.nm_status === "Verifikasi Perguruan Tinggi").length;
-                const sudahVerif = progresData.filter(r => r.nm_status === "Persetujuan Pimpinan Perguruan Tinggi" || r.nm_status === "Proses Verifikasi Dinas Pendidikan dan Penetapan Kepgub").length;
+                const sudahVerif = progresData.filter(r => 
+                    r.nm_status === "Persetujuan Pimpinan Perguruan Tinggi" || 
+                    r.nm_status === "Proses Verifikasi Dinas Pendidikan dan Penetapan Kepgub" || 
+                    r.nm_status === "Dibatalkan Oleh Kampus"
+                ).length;
 
                 const listSudah = sptjmData.filter(item => item.uploaddokumen !== null && item.uploaddokumen !== '');
                 const listBelum = sptjmData.filter(item => item.uploaddokumen === null || item.uploaddokumen === '');
