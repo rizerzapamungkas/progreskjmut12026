@@ -216,7 +216,7 @@
                     <div class="xl:col-span-5 border border-slate-200 rounded-xl overflow-hidden shadow-sm flex flex-col justify-between">
                         <table class="w-full text-sm text-left h-full">
                             <tbody class="text-xs font-bold text-slate-600">
-                                <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors h-[34px]"><td class="py-1 px-3 uppercase tracking-wider text-[11px] align-middle">Jumlah Penerima</td><td id="baru-penerima" class="py-1 px-3 font-black text-slate-900 text-right text-[13px] align-middle">0</td></tr>
+                                <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors h-[34px]"><td class="py-1 px-3 uppercase tracking-wider text-[11px] align-middle">Jumlah Pendaftar</td><td id="baru-penerima" class="py-1 px-3 font-black text-slate-900 text-right text-[13px] align-middle">0</td></tr>
                                 <tr class="border-b border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors h-[34px]"><td class="py-1 px-3 uppercase tracking-wider text-[11px] align-middle">Jumlah Kampus</td><td id="baru-kampus" class="py-1 px-3 font-black text-slate-900 text-right text-[13px] align-middle">0</td></tr>
                                 <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors h-[34px]"><td class="py-1 px-3 uppercase tracking-wider text-[11px] align-middle">Jumlah PTN</td><td id="baru-ptn" class="py-1 px-3 font-black text-blue-600 text-right text-[13px] align-middle">0</td></tr>
                                 <tr class="border-b border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors h-[34px]"><td class="py-1 px-3 uppercase tracking-wider text-[11px] align-middle">Jumlah PTS</td><td id="baru-pts" class="py-1 px-3 font-black text-orange-600 text-right text-[13px] align-middle">0</td></tr>
@@ -627,6 +627,7 @@
                 let stats = {
                     eksisting: {
                         penerima: 0, kampusSet: new Set(), uploadSudah: 0, uploadBelum: 0,
+                        ptnSet: new Set(), ptsSet: new Set(),
                         ptnTotal: 0, ptsTotal: 0,
                         jenjang: {
                             'D3': { ptn: 0, pts: 0 },
@@ -637,6 +638,7 @@
                     },
                     baru: {
                         penerima: 0, kampusSet: new Set(), verifSudah: 0, verifBelum: 0,
+                        ptnSet: new Set(), ptsSet: new Set(),
                         ptnTotal: 0, ptsTotal: 0,
                         jenjang: {
                             'D3': { ptn: 0, pts: 0 },
@@ -690,9 +692,11 @@
 
                         if (isPTN) {
                             stats.eksisting.ptnTotal++;
+                            stats.eksisting.ptnSet.add(univ);
                             stats.eksisting.jenjang[jnj].ptn++;
                         } else {
                             stats.eksisting.ptsTotal++;
+                            stats.eksisting.ptsSet.add(univ);
                             stats.eksisting.jenjang[jnj].pts++;
                         }
                     } else {
@@ -706,9 +710,11 @@
 
                         if (isPTN) {
                             stats.baru.ptnTotal++;
+                            stats.baru.ptnSet.add(univ);
                             stats.baru.jenjang[jnj].ptn++;
                         } else {
                             stats.baru.ptsTotal++;
+                            stats.baru.ptsSet.add(univ);
                             stats.baru.jenjang[jnj].pts++;
                         }
                     }
@@ -730,8 +736,8 @@
                 // ================= INJECTION KOTAK 1 (Eksisting) =================
                 document.getElementById('eks-penerima').innerText = fmt(stats.eksisting.penerima);
                 document.getElementById('eks-kampus').innerText = fmt(stats.eksisting.kampusSet.size);
-                document.getElementById('eks-ptn').innerText = fmt(stats.eksisting.ptnTotal);
-                document.getElementById('eks-pts').innerText = fmt(stats.eksisting.ptsTotal);
+                document.getElementById('eks-ptn').innerText = fmt(stats.eksisting.ptnSet.size);
+                document.getElementById('eks-pts').innerText = fmt(stats.eksisting.ptsSet.size);
                 document.getElementById('eks-upload-sudah').innerText = fmt(stats.eksisting.uploadSudah);
                 document.getElementById('eks-upload-belum').innerText = fmt(stats.eksisting.uploadBelum);
 
@@ -751,8 +757,8 @@
                 // ================= INJECTION KOTAK 2 (Penerima Baru) =================
                 document.getElementById('baru-penerima').innerText = fmt(stats.baru.penerima);
                 document.getElementById('baru-kampus').innerText = fmt(stats.baru.kampusSet.size);
-                document.getElementById('baru-ptn').innerText = fmt(stats.baru.ptnTotal);
-                document.getElementById('baru-pts').innerText = fmt(stats.baru.ptsTotal);
+                document.getElementById('baru-ptn').innerText = fmt(stats.baru.ptnSet.size);
+                document.getElementById('baru-pts').innerText = fmt(stats.baru.ptsSet.size);
                 document.getElementById('baru-verif-sudah').innerText = fmt(stats.baru.verifSudah);
                 document.getElementById('baru-verif-belum').innerText = fmt(stats.baru.verifBelum);
 
