@@ -3,39 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitoring Dashboard KJMU</title>
+    <title>Dashboard Monitoring - P4OP</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         body { background-color: #f8fafc; font-family: 'Plus Jakarta Sans', sans-serif; color: #1e293b; }
-        
-        #global-loader {
-            position: fixed; inset: 0; background: rgba(255, 255, 255, 0.9);
-            display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999;
+        .overflow-y-auto {
+            overflow-x: auto !important; 
+            -webkit-overflow-scrolling: touch;
         }
-        .spinner {
-            width: 40px; height: 40px; border: 4px solid #f3f3f3;
-            border-top: 4px solid #1e293b; border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* Style khusus scrollbar agar rapi */
-        .custom-scroll::-webkit-scrollbar { width: 6px; }
-        .custom-scroll::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .break-words {
+            word-break: break-word;
+            min-width: 120px; 
+            line-height: 1.2;
+        }
+
+        @media (max-width: 640px) {
+            th, td {
+                padding: 4px 6px !important;
+                font-size: 10px !important;
+            }
+            .w-16 { width: 45px !important; }
+            .w-20 { width: 55px !important; }
+        }
+        
+        #main-data-table td { 
+            vertical-align: middle !important; 
+            word-wrap: break-word; 
+            padding: 6px 10px !important; 
+            font-size: 14px !important; 
+        }
+
+        #global-loader {
+            position: fixed;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(4px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.3s ease;
+        }
+
+        .spinner-pop {
+            width: 60px;
+            height: 60px;
+            border: 6px solid #f3f3f3;
+            border-top: 6px solid #1e293b;
+            border-radius: 50%;
+            animation: spin 1s linear infinite, popOut 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes popOut {
+            0% { transform: scale(0); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
     </style>
 </head>
 <body class="antialiased">
-
     <div id="instruction-container" class="fixed bottom-6 left-6 z-[9999] transition-all duration-500 ease-in-out transform">
         <button id="expand-btn" onclick="toggleInstruction()" class="hidden bg-rose-600 hover:bg-rose-700 text-white p-4 rounded-2xl shadow-2xl flex items-center gap-3 animate-bounce">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             <span class="font-black text-[15px] uppercase tracking-widest">Lihat Pedoman Verifikasi</span>
         </button>
 
-        <div id="instruction-box" class="bg-white w-[350px] md:w-[450px] rounded-3xl shadow-2xl border-2 border-rose-500 overflow-hidden shadow-rose-200/50">
+        <div id="instruction-box" class="bg-white w-[350px] md:w-[450px] rounded-3xl shadow-2xl border-2 border-rose-500 overflow-hidden shadow-rose-200/50 hidden">
             <div class="bg-rose-600 px-5 py-3 flex justify-between items-center">
                 <div class="flex items-center gap-2">
                     <div class="w-2 h-2 bg-white rounded-full animate-pulse"></div>
@@ -68,182 +111,412 @@
             </div>
         </div>
     </div>
-
+    
     <div id="global-loader">
-        <div class="spinner"></div>
-        <p class="mt-4 text-slate-900 font-black uppercase tracking-widest text-lg animate-pulse">Menarik Data Terbaru...</p>
+        <div class="spinner-pop"></div>
+        <p class="mt-4 text-slate-900 font-black uppercase tracking-widest text-xs animate-pulse">Memuat Data...</p>
     </div>
-
-    <div class="max-w-[1400px] mx-auto px-6 py-10">
-        
-        <div class="flex flex-col lg:flex-row justify-between items-center gap-8 mb-10">
-            <div>
-                <h1 class="text-4xl font-black text-slate-900 tracking-tighter uppercase">Dashboard Monitoring Verifikasi</h1>
-                <p class="text-blue-600 font-bold uppercase tracking-tight text-lg">Kartu Jakarta Mahasiswa Unggul Tahap 1 Tahun 2026</p>
+    
+    <!-- ================================================================= -->
+    <!-- HALAMAN 1: VIEW UTAMA (PUBLIK / SEBELUM LOGIN)                     -->
+    <!-- ================================================================= -->
+    <div id="view-landing" class="max-w-[1600px] mx-auto px-6 py-8">
+        <div class="flex flex-col lg:flex-row justify-between items-center gap-8 mb-4">
+            <div class="flex items-center gap-7 w-full lg:w-auto">
+                <img src="https://i.imgur.com/7QcgJj0.png" alt="Logo" class="hidden lg:block h-20 w-auto object-contain">
+                <div class="mb-4">
+                    <h1 class="text-4xl font-black text-slate-900 tracking-tighter uppercase">
+                        Dashboard Monitoring Pendataan
+                    </h1>
+                    <div class="flex flex-col md:flex-row md:items-center gap-2 mt-1">
+                        <h2 class="text-lg font-bold text-blue-600 uppercase tracking-tight">
+                            Kartu Jakarta Mahasiswa Unggul Tahap 2 Tahun 2026
+                        </h2>
+                        <span class="hidden md:block text-slate-300">|</span>
+                        <span class="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-1 rounded-md">
+                            Data otomatis terupdate setiap 1 jam
+                        </span>
+                    </div>
+                </div>
             </div>
             
-            <div class="flex gap-4 w-full lg:w-auto">
-                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm w-full md:w-44 text-center">
-                    <p class="text-[11px] font-bold text-slate-700 uppercase tracking-widest mb-1">SELESAI VERIF</p>
-                    <span id="percent-upload" class="text-3xl font-black text-emerald-600">0.00%</span>
-                    <div class="w-full bg-slate-100 h-1.5 mt-3 rounded-full overflow-hidden">
+            <div class="flex flex-col md:flex-row gap-4 w-full lg:w-auto">
+                <div class="flex flex-col gap-1.5 w-full md:w-56">
+                    <button onclick="openLoginModal()" class="bg-white hover:bg-slate-50 text-slate-900 rounded-2xl p-4 shadow-sm w-full flex items-center gap-3.5 transition-all active:scale-95 border-2 border-slate-200 hover:border-blue-500 group text-left">
+                        <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all shrink-0">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
+                        </div>
+                        <div class="overflow-hidden">
+                            <span class="text-[16px] font-black uppercase tracking-wider block text-slate-900 leading-tight">Login</span>
+                            <span class="text-[14px] font-bold text-slate-900 uppercase tracking-tight block truncate mt-0.5">Perguruan Tinggi</span>
+                        </div>
+                    </button>
+                    <p class="text-[11px] font-bold text-slate-500 text-center uppercase tracking-wide px-1">Login untuk melihat <br>status per mahasiswa</p>
+                </div>
+
+                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm w-full md:w-40 flex flex-col items-center text-center">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">SUDAH VERIFIKASI</p>
+                    <span id="percent-upload" class="text-2xl font-black text-emerald-600 mb-3">0.00%</span>
+                    <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
                         <div id="bar-upload" class="bg-emerald-500 h-full transition-all duration-1000" style="width: 0%"></div>
                     </div>
                 </div>
 
-                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm w-full md:w-44 text-center">
-                    <p class="text-[11px] font-bold text-slate-700 uppercase tracking-widest mb-1">BELUM VERIF</p>
-                    <span id="percent-verif" class="text-3xl font-black text-rose-600">0.00%</span>
-                    <div class="w-full bg-slate-100 h-1.5 mt-3 rounded-full overflow-hidden">
+                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm w-full md:w-40 flex flex-col items-center text-center">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">BELUM VERIFIKASI</p>
+                    <span id="percent-verif" class="text-2xl font-black text-rose-600 mb-3">0.00%</span>
+                    <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
                         <div id="bar-verif" class="bg-rose-600 h-full transition-all duration-1000" style="width: 0%"></div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
-            <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
-                <h3 class="text-lg font-black text-slate-800 uppercase tracking-tight mb-5 border-b pb-4">Status Pendataan</h3>
-                <div class="space-y-4">
-                    <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-                        <span class="text-lg font-bold text-slate-700 uppercase">Jumlah Penerima</span>
-                        <span id="stat-total-mhs" class="text-lg font-black text-slate-900">0</span>
+        <!-- GRID 4 KOTAK REKAPITULASI -->
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
+            
+            <!-- KOTAK 1: EKSISTING -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col h-full">
+                <label class="block text-[18px] font-black text-slate-800 uppercase tracking-widest mb-3 border-b border-slate-100 pb-2">Rekap Penerima Eksisting / Lanjutan</label>
+                <div class="grid grid-cols-1 xl:grid-cols-12 gap-3 items-stretch flex-grow">
+                    <div class="xl:col-span-5 border border-slate-200 rounded-xl overflow-hidden shadow-sm flex flex-col justify-between">
+                        <table class="w-full text-sm text-left h-full">
+                            <tbody class="text-xs font-bold text-slate-600">
+                                <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors h-[34px]"><td class="py-1 px-3 uppercase tracking-wider text-[11px] align-middle">Jumlah Penerima</td><td id="eks-penerima" class="py-1 px-3 font-black text-slate-900 text-right text-[13px] align-middle">0</td></tr>
+                                <tr class="border-b border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors h-[34px]"><td class="py-1 px-3 uppercase tracking-wider text-[11px] align-middle">Jumlah Kampus</td><td id="eks-kampus" class="py-1 px-3 font-black text-slate-900 text-right text-[13px] align-middle">0</td></tr>
+                                <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors h-[34px]"><td class="py-1 px-3 uppercase tracking-wider text-[11px] align-middle">Jumlah PTN</td><td id="eks-ptn" class="py-1 px-3 font-black text-blue-600 text-right text-[13px] align-middle">0</td></tr>
+                                <tr class="border-b border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors h-[34px]"><td class="py-1 px-3 uppercase tracking-wider text-[11px] align-middle">Jumlah PTS</td><td id="eks-pts" class="py-1 px-3 font-black text-orange-600 text-right text-[13px] align-middle">0</td></tr>
+                                <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors h-[34px]"><td class="py-1 px-3 uppercase tracking-wider text-[11px] align-middle">Sudah Upload Berkas</td><td id="eks-upload-sudah" class="py-1 px-3 font-black text-emerald-600 text-right text-[13px] align-middle">0</td></tr>
+                                <tr class="hover:bg-slate-50 transition-colors h-[34px]"><td class="py-1 px-3 uppercase tracking-wider text-[11px] align-middle">Belum Upload Berkas</td><td id="eks-upload-belum" class="py-1 px-3 font-black text-rose-600 text-right text-[13px] align-middle">0</td></tr>
+                            </tbody>
+                        </table>
                     </div>
-                    <div class="flex justify-between items-center p-3 bg-white border border-slate-100 rounded-xl">
-                        <span class="text-lg font-bold text-slate-700 uppercase">Jumlah Perguruan Tinggi</span>
-                        <span id="stat-total-univ" class="text-lg font-black text-slate-900">0</span>
-                    </div>
-                    <div class="flex justify-between items-center p-3 bg-white border border-slate-100 rounded-xl">
-                        <span class="text-lg font-bold text-blue-600 uppercase">Jumlah PTN</span>
-                        <span id="stat-total-ptn" class="text-lg font-black text-blue-600">0</span>
-                    </div>
-                    <div class="flex justify-between items-center p-3 bg-white border border-slate-100 rounded-xl">
-                        <span class="text-lg font-bold text-orange-600 uppercase">Jumlah PTS</span>
-                        <span id="stat-total-pts" class="text-lg font-black text-orange-600">0</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
-                <h3 class="text-lg font-black text-slate-800 uppercase tracking-tight mb-5 border-b pb-4">Status Verifikasi</h3>
-                <div class="space-y-4">
-                    <div class="flex justify-between items-center p-3 bg-rose-50 rounded-xl">
-                        <span class="text-lg font-bold text-rose-700 uppercase">Belum Verifikasi</span>
-                        <span id="count-belum-verif" class="text-lg font-black text-rose-600">0</span>
-                    </div>
-                    <div class="flex justify-between items-center p-3 bg-emerald-50 rounded-xl">
-                        <span class="text-lg font-bold text-emerald-700 uppercase">Sudah Verifikasi</span>
-                        <span id="count-sudah-verif" class="text-lg font-black text-emerald-600">0</span>
-                    </div>
-                    <div class="flex justify-between items-center p-3 bg-white border border-slate-100 rounded-xl">
-                        <span class="text-lg font-bold text-blue-600 uppercase">Sudah Upload SPTJM</span>
-                        <span id="count-sudah-sptjm" class="text-lg font-black text-blue-600">0</span>
-                    </div>
-                    <div class="flex justify-between items-center p-3 bg-white border border-slate-100 rounded-xl">
-                        <span class="text-lg font-bold text-orange-600 uppercase">Belum Upload SPTJM</span>
-                        <span id="count-belum-sptjm" class="text-lg font-black text-orange-600">0</span>
+                    <div class="xl:col-span-7 border border-slate-200 rounded-xl overflow-hidden shadow-sm flex flex-col justify-between">
+                        <table class="w-full text-center h-full">
+                            <thead class="bg-slate-100 border-b border-slate-200 text-[10px] font-black text-slate-700 uppercase tracking-widest">
+                                <tr><th rowspan="2" class="py-1.5 px-1.5 border-r border-slate-200 align-middle">Jenjang</th><th colspan="2" class="py-1 px-1.5 border-r border-slate-200 border-b border-slate-200">Jenis PT</th><th rowspan="2" class="py-1.5 px-1.5 border-r border-slate-200 align-middle bg-slate-200/50">Total</th><th rowspan="2" class="py-1.5 px-1.5 align-middle">%</th></tr>
+                                <tr><th class="py-0.5 px-1.5 border-r border-slate-200 text-blue-700">PTN</th><th class="py-0.5 px-1.5 border-r border-slate-200 text-orange-600">PTS</th></tr>
+                            </thead>
+                            <tbody class="text-[11px] font-bold text-slate-600">
+                                <tr class="border-b border-slate-100 hover:bg-slate-50"><td class="py-1.5 px-1 border-r border-slate-200 uppercase tracking-widest align-middle">D3</td><td id="eks-d3-ptn" class="py-1.5 px-1 border-r border-slate-200 align-middle">0</td><td id="eks-d3-pts" class="py-1.5 px-1 border-r border-slate-200 align-middle">0</td><td id="eks-d3-tot" class="py-1.5 px-1 border-r border-slate-200 text-slate-900 font-black bg-slate-50/50 align-middle">0</td><td id="eks-d3-pct" class="py-1.5 px-1 align-middle">0%</td></tr>
+                                <tr class="border-b border-slate-100 bg-slate-50/50 hover:bg-slate-50"><td class="py-1.5 px-1 border-r border-slate-200 uppercase tracking-widest align-middle">D4</td><td id="eks-d4-ptn" class="py-1.5 px-1 border-r border-slate-200 align-middle">0</td><td id="eks-d4-pts" class="py-1.5 px-1 border-r border-slate-200 align-middle">0</td><td id="eks-d4-tot" class="py-1.5 px-1 border-r border-slate-200 text-slate-900 font-black bg-slate-50/50 align-middle">0</td><td id="eks-d4-pct" class="py-1.5 px-1 align-middle">0%</td></tr>
+                                <tr class="border-b border-slate-100 hover:bg-slate-50"><td class="py-1.5 px-1 border-r border-slate-200 uppercase tracking-widest align-middle">S1</td><td id="eks-s1-ptn" class="py-1.5 px-1 border-r border-slate-200 align-middle">0</td><td id="eks-s1-pts" class="py-1.5 px-1 border-r border-slate-200 align-middle">0</td><td id="eks-s1-tot" class="py-1.5 px-1 border-r border-slate-200 text-slate-900 font-black bg-slate-50/50 align-middle">0</td><td id="eks-s1-pct" class="py-1.5 px-1 align-middle">0%</td></tr>
+                                <tr class="border-b border-slate-100 bg-slate-50/50 hover:bg-slate-50"><td class="py-1.5 px-1 border-r border-slate-200 uppercase tracking-widest align-middle">Profesi</td><td id="eks-profesi-ptn" class="py-1.5 px-1 border-r border-slate-200 align-middle">0</td><td id="eks-profesi-pts" class="py-1.5 px-1 border-r border-slate-200 align-middle">0</td><td id="eks-profesi-tot" class="py-1.5 px-1 border-r border-slate-200 text-slate-900 font-black bg-slate-50/50 align-middle">0</td><td id="eks-profesi-pct" class="py-1.5 px-1 align-middle">0%</td></tr>
+                                <tr class="bg-slate-800 text-white font-black uppercase tracking-widest text-[10px]"><td class="py-2 px-1 border-r border-slate-700 align-middle">Total</td><td id="eks-tot-ptn" class="py-2 px-1 border-r border-slate-700 align-middle">0</td><td id="eks-tot-pts" class="py-2 px-1 border-r border-slate-700 align-middle">0</td><td id="eks-tot-tot" class="py-2 px-1 border-r border-slate-700 align-middle">0</td><td id="eks-tot-pct" class="py-2 px-1 text-emerald-400 align-middle">100%</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-slate-900 rounded-3xl p-6 shadow-xl text-white">
-                <div class="flex justify-between items-center mb-12">
-                    <h3 class="text-lg font-black uppercase tracking-tight text-white">Jadwal Kegiatan</h3>
-                    <span id="current-date" class="text-lg font-bold opacity-50 uppercase"></span>
-                </div>
-                <div class="space-y-6 relative border-l border-white/20 ml-2 pl-6">
-                    <div class="relative">
-                        <div class="absolute -left-[30.5px] top-1 w-2.5 h-2.5 rounded-full bg-rose-500"></div>
-                        <h4 class="text-[11px] font-black uppercase tracking-wider text-rose-400">Unggah Berkas Administrasi BANSOS</h4>
-                        <p class="text-lg opacity-70 mt-1 italic">09 Maret 2026 – 27 Mar 2026</p>
+            <!-- KOTAK 2: BARU -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col h-full">
+                <label class="block text-[18px] font-black text-slate-800 uppercase tracking-widest mb-3 border-b border-slate-100 pb-2">Rekap Calon Penerima Baru</label>
+                <div class="grid grid-cols-1 xl:grid-cols-12 gap-3 items-stretch flex-grow">
+                    <div class="xl:col-span-5 border border-slate-200 rounded-xl overflow-hidden shadow-sm flex flex-col justify-between">
+                        <table class="w-full text-sm text-left h-full">
+                            <tbody class="text-xs font-bold text-slate-600">
+                                <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors h-[34px]"><td class="py-1 px-3 uppercase tracking-wider text-[11px] align-middle">Jumlah Penerima</td><td id="baru-penerima" class="py-1 px-3 font-black text-slate-900 text-right text-[13px] align-middle">0</td></tr>
+                                <tr class="border-b border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors h-[34px]"><td class="py-1 px-3 uppercase tracking-wider text-[11px] align-middle">Jumlah Kampus</td><td id="baru-kampus" class="py-1 px-3 font-black text-slate-900 text-right text-[13px] align-middle">0</td></tr>
+                                <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors h-[34px]"><td class="py-1 px-3 uppercase tracking-wider text-[11px] align-middle">Jumlah PTN</td><td id="baru-ptn" class="py-1 px-3 font-black text-blue-600 text-right text-[13px] align-middle">0</td></tr>
+                                <tr class="border-b border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors h-[34px]"><td class="py-1 px-3 uppercase tracking-wider text-[11px] align-middle">Jumlah PTS</td><td id="baru-pts" class="py-1 px-3 font-black text-orange-600 text-right text-[13px] align-middle">0</td></tr>
+                                <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors h-[34px]"><td class="py-1 px-3 uppercase tracking-wider text-[11px] align-middle">Sudah Verif Kampus</td><td id="baru-verif-sudah" class="py-1 px-3 font-black text-emerald-600 text-right text-[13px] align-middle">0</td></tr>
+                                <tr class="hover:bg-slate-50 transition-colors h-[34px]"><td class="py-1 px-3 uppercase tracking-wider text-[11px] align-middle">Belum Verif Kampus</td><td id="baru-verif-belum" class="py-1 px-3 font-black text-rose-600 text-right text-[13px] align-middle">0</td></tr>
+                            </tbody>
+                        </table>
                     </div>
-                    <div class="relative">
-                        <div class="absolute -left-[30.5px] top-1 w-2.5 h-2.5 rounded-full bg-orange-500"></div>
-                        <h4 class="text-[11px] font-black uppercase tracking-wider text-orange-400">Verifikasi Perguruan Tinggi</h4>
-                        <p class="text-lg opacity-70 mt-1 italic">09 Maret 2026 – 08 Apr 2026</p>
-                    </div>
-                    <div class="relative">
-                        <div class="absolute -left-[30.5px] top-1 w-2.5 h-2.5 rounded-full bg-blue-500"></div>
-                        <h4 class="text-[11px] font-black uppercase tracking-wider text-blue-400">Verif Disdik & Penetapan KEPGUB</h4>
-                        <p class="text-lg opacity-70 mt-1 italic">09 April 2026 – 29 Apr 2026</p>
+                    <div class="xl:col-span-7 border border-slate-200 rounded-xl overflow-hidden shadow-sm flex flex-col justify-between">
+                        <table class="w-full text-center h-full">
+                            <thead class="bg-slate-100 border-b border-slate-200 text-[10px] font-black text-slate-700 uppercase tracking-widest">
+                                <tr><th rowspan="2" class="py-1.5 px-1.5 border-r border-slate-200 align-middle">Jenjang</th><th colspan="2" class="py-1 px-1.5 border-r border-slate-200 border-b border-slate-200">Jenis PT</th><th rowspan="2" class="py-1.5 px-1.5 border-r border-slate-200 align-middle bg-slate-200/50">Total</th><th rowspan="2" class="py-1.5 px-1.5 align-middle">%</th></tr>
+                                <tr><th class="py-0.5 px-1.5 border-r border-slate-200 text-blue-700">PTN</th><th class="py-0.5 px-1.5 border-r border-slate-200 text-orange-600">PTS</th></tr>
+                            </thead>
+                            <tbody class="text-[11px] font-bold text-slate-600">
+                                <tr class="border-b border-slate-100 hover:bg-slate-50"><td class="py-1.5 px-1 border-r border-slate-200 uppercase tracking-widest align-middle">D3</td><td id="baru-d3-ptn" class="py-1.5 px-1 border-r border-slate-200 align-middle">0</td><td id="baru-d3-pts" class="py-1.5 px-1 border-r border-slate-200 align-middle">0</td><td id="baru-d3-tot" class="py-1.5 px-1 border-r border-slate-200 text-slate-900 font-black bg-slate-50/50 align-middle">0</td><td id="baru-d3-pct" class="py-1.5 px-1 align-middle">0%</td></tr>
+                                <tr class="border-b border-slate-100 bg-slate-50/50 hover:bg-slate-50"><td class="py-1.5 px-1 border-r border-slate-200 uppercase tracking-widest align-middle">D4</td><td id="baru-d4-ptn" class="py-1.5 px-1 border-r border-slate-200 align-middle">0</td><td id="baru-d4-pts" class="py-1.5 px-1 border-r border-slate-200 align-middle">0</td><td id="baru-d4-tot" class="py-1.5 px-1 border-r border-slate-200 text-slate-900 font-black bg-slate-50/50 align-middle">0</td><td id="baru-d4-pct" class="py-1.5 px-1 align-middle">0%</td></tr>
+                                <tr class="border-b border-slate-100 hover:bg-slate-50"><td class="py-1.5 px-1 border-r border-slate-200 uppercase tracking-widest align-middle">S1</td><td id="baru-s1-ptn" class="py-1.5 px-1 border-r border-slate-200 align-middle">0</td><td id="baru-s1-pts" class="py-1.5 px-1 border-r border-slate-200 align-middle">0</td><td id="baru-s1-tot" class="py-1.5 px-1 border-r border-slate-200 text-slate-900 font-black bg-slate-50/50 align-middle">0</td><td id="baru-s1-pct" class="py-1.5 px-1 align-middle">0%</td></tr>
+                                <tr class="border-b border-slate-100 bg-slate-50/50 hover:bg-slate-50"><td class="py-1.5 px-1 border-r border-slate-200 uppercase tracking-widest align-middle">Profesi</td><td id="baru-profesi-ptn" class="py-1.5 px-1 border-r border-slate-200 align-middle">0</td><td id="baru-profesi-pts" class="py-1.5 px-1 border-r border-slate-200 align-middle">0</td><td id="baru-profesi-tot" class="py-1.5 px-1 border-r border-slate-200 text-slate-900 font-black bg-slate-50/50 align-middle">0</td><td id="baru-profesi-pct" class="py-1.5 px-1 align-middle">0%</td></tr>
+                                <tr class="bg-slate-800 text-white font-black uppercase tracking-widest text-[10px]"><td class="py-2 px-1 border-r border-slate-700 align-middle">Total</td><td id="baru-tot-ptn" class="py-2 px-1 border-r border-slate-700 align-middle">0</td><td id="baru-tot-pts" class="py-2 px-1 border-r border-slate-700 align-middle">0</td><td id="baru-tot-tot" class="py-2 px-1 border-r border-slate-700 align-middle">0</td><td id="baru-tot-pct" class="py-2 px-1 text-emerald-400 align-middle">100%</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
+
+            <!-- KOTAK 3: TOTAL KESELURUHAN -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col h-full">
+                <label class="block text-[18px] font-black text-slate-800 uppercase tracking-widest mb-3 border-b border-slate-100 pb-2">Total Penerima Keseluruhan</label>
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start flex-grow">
+                    <div class="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                        <div class="bg-slate-100 py-1.5 px-3 text-center border-b border-slate-200 text-xs font-black text-slate-700 uppercase tracking-wider">Berkas Mahasiswa</div>
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-slate-50 border-b border-slate-200 text-[10px] font-black text-slate-600 uppercase tracking-widest">
+                                <tr><th class="py-1.5 px-3">Status</th><th class="py-1.5 px-2 text-center">Jumlah</th><th class="py-1.5 px-2 text-center">%</th></tr>
+                            </thead>
+                            <tbody class="text-[11px] font-bold text-slate-600">
+                                <tr class="border-b border-slate-100 hover:bg-slate-50"><td class="py-1.5 px-3">SUDAH UPLOAD</td><td id="all-berkas-sudah" class="py-1.5 px-2 text-center">0</td><td id="all-berkas-sudah-pct" class="py-1.5 px-2 text-center text-blue-600">0%</td></tr>
+                                <tr class="border-b border-slate-100 bg-slate-50/50 hover:bg-slate-50"><td class="py-1.5 px-3">BELUM UPLOAD</td><td id="all-berkas-belum" class="py-1.5 px-2 text-center">0</td><td id="all-berkas-belum-pct" class="py-1.5 px-2 text-center text-rose-600">0%</td></tr>
+                                <tr class="bg-slate-800 text-white font-black uppercase tracking-widest text-[10px]"><td class="py-2 px-3">TOTAL</td><td id="all-berkas-tot" class="py-2 px-2 text-center">0</td><td class="py-2 px-2 text-center text-emerald-400">100%</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                        <div class="bg-slate-100 py-1.5 px-3 text-center border-b border-slate-200 text-xs font-black text-slate-700 uppercase tracking-wider">Verifikasi Perguruan Tinggi</div>
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-slate-50 border-b border-slate-200 text-[10px] font-black text-slate-600 uppercase tracking-widest">
+                                <tr><th class="py-1.5 px-3">Status</th><th class="py-1.5 px-2 text-center">Jumlah</th><th class="py-1.5 px-2 text-center">%</th></tr>
+                            </thead>
+                            <tbody class="text-[11px] font-bold text-slate-600">
+                                <tr class="border-b border-slate-100 hover:bg-slate-50"><td class="py-1.5 px-3">SUDAH VERIFIKASI</td><td id="all-verif-sudah" class="py-1.5 px-2 text-center">0</td><td id="all-verif-sudah-pct" class="py-1.5 px-2 text-center text-blue-600">0%</td></tr>
+                                <tr class="border-b border-slate-100 bg-slate-50/50 hover:bg-slate-50"><td class="py-1.5 px-3">BELUM VERIFIKASI</td><td id="all-verif-belum" class="py-1.5 px-2 text-center">0</td><td id="all-verif-belum-pct" class="py-1.5 px-2 text-center text-rose-600">0%</td></tr>
+                                <tr class="bg-slate-800 text-white font-black uppercase tracking-widest text-[10px]"><td class="py-2 px-3">TOTAL</td><td id="all-verif-tot" class="py-2 px-2 text-center">0</td><td class="py-2 px-2 text-center text-emerald-400">100%</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KOTAK 4: WAKTU & JADWAL -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col h-full">
+                <div class="flex justify-between items-start mb-1">
+                    <label class="block text-[18px] font-black text-slate-800 uppercase tracking-widest mb-3 border-b border-slate-100 pb-2">Waktu & Jadwal Pendataan</label>
+                    <div class="bg-slate-900 text-white px-2 py-0.5 rounded-lg border border-slate-800 flex items-center gap-1.5">
+                        <div class="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></div>
+                        <span id="current-date" class="text-[15px] font-black uppercase tracking-widest"></span>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 flex-grow items-stretch">
+                    <div class="bg-white rounded-xl p-3 shadow-sm border-2 border-rose-500 overflow-hidden relative flex flex-col justify-center text-center">
+                        <div class="border-b border-slate-900/10 pb-2 mb-2">
+                            <h3 class="text-[20px] font-black text-slate-900 uppercase tracking-tighter leading-tight">Sisa Waktu Verifikasi<br>Perguruan Tinggi</h3>
+                            <p class="text-[13px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Batas Akhir: 08 April 2026, 23:59 WIB</p>
+                        </div>
+                        <div class="flex gap-2 justify-center w-full">
+                            <div class="flex flex-col items-center w-[45px]"><span id="cd-days" class="text-3xl font-black text-rose-600 leading-none">00</span><span class="text-[13px] font-extrabold text-slate-400 uppercase mt-1 tracking-widest">Hari</span></div>
+                            <div class="flex flex-col items-center w-[45px]"><span id="cd-hours" class="text-3xl font-black text-slate-800 leading-none">00</span><span class="text-[13px] font-extrabold text-slate-400 uppercase mt-1 tracking-widest">Jam</span></div>
+                            <div class="flex flex-col items-center w-[45px]"><span id="cd-minutes" class="text-3xl font-black text-slate-800 leading-none">00</span><span class="text-[13px] font-extrabold text-slate-400 uppercase mt-1 tracking-widest">Menit</span></div>
+                            <div class="flex flex-col items-center w-[45px]"><span id="cd-seconds" class="text-3xl font-black text-slate-800 leading-none">00</span><span class="text-[13px] font-extrabold text-slate-400 uppercase mt-1 tracking-widest">Detik</span></div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-200 flex flex-col justify-center">
+                        <div class="flex justify-center items-center mb-1"><h3 class="text-[15px] font-black text-slate-800 uppercase tracking-widest">Jadwal Pendataan</h3></div>
+                        <div class="relative flex-grow space-y-2 pl-5 border-l-2 border-slate-100 ml-1 py-1">
+                            <div class="relative flex flex-col gap-0.5">
+                                <div class="absolute -left-[27px] top-0.5 w-3.5 h-3.5 rounded-full border-2 border-white bg-rose-500 shadow-sm"></div>
+                                <p class="text-[10px] font-black text-rose-500 uppercase tracking-widest">09 Mar – 27 Mar</p>
+                                <h4 class="text-[13px] font-black text-slate-800 leading-tight uppercase">Unggah Berkas Bansos</h4>
+                            </div>
+                            <div class="relative flex flex-col gap-0.5">
+                                <div class="absolute -left-[27px] top-0.5 w-3.5 h-3.5 rounded-full border-2 border-white bg-orange-500 shadow-sm"></div>
+                                <p class="text-[10px] font-black text-orange-500 uppercase tracking-widest">09 Mar – 08 Apr</p>
+                                <h4 class="text-[13px] font-black text-slate-800 leading-tight uppercase">Verifikasi PT</h4>
+                            </div>
+                            <div class="relative flex flex-col gap-0.5">
+                                <div class="absolute -left-[27px] top-0.5 w-3.5 h-3.5 rounded-full border-2 border-white bg-blue-600 shadow-sm"></div>
+                                <p class="text-[10px] font-black text-blue-600 uppercase tracking-widest">09 Apr – 29 Apr</p>
+                                <h4 class="text-[13px] font-black text-slate-800 leading-tight uppercase">Verif Disdik & KEPGUB</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
-        <div class="bg-white rounded-3xl p-8 shadow-sm border border-slate-200 overflow-hidden relative mb-10">
-            <div class="flex flex-col md:flex-row items-center justify-center gap-0">
-                <div class="w-full md:w-1/2 pr-0 md:pr-10 text-center md:text-right border-b md:border-b-0 md:border-r border-slate-100 pb-6 md:pb-0">
-                    <h3 class="text-2xl font-black text-slate-900 uppercase tracking-tighter leading-tight">Sisa Waktu Verifikasi<br>Perguruan Tinggi</h3>
-                    <p class="text-lg font-bold text-slate-700 uppercase tracking-widest mt-2">Deadline: 08 April 2026, 23:59 WIB</p>
-                </div>
-                <div class="w-full md:w-1/2 pl-0 md:pl-10 pt-6 md:pt-0 flex justify-center md:justify-start">
-                    <div class="flex gap-6">
-                        <div class="flex flex-col items-center"><span id="cd-days" class="text-5xl font-black text-rose-600">00</span><span class="text-lg font-bold uppercase text-slate-700">Hari</span></div>
-                        <div class="flex flex-col items-center text-slate-700 text-4xl font-light">:</div>
-                        <div class="flex flex-col items-center"><span id="cd-hours" class="text-5xl font-black text-slate-800">00</span><span class="text-lg font-bold uppercase text-slate-700">Jam</span></div>
-                        <div class="flex flex-col items-center text-slate-700 text-4xl font-light">:</div>
-                        <div class="flex flex-col items-center"><span id="cd-minutes" class="text-5xl font-black text-slate-800">00</span><span class="text-lg font-bold uppercase text-slate-700">Menit</span></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-                <div class="bg-emerald-50 px-6 py-4 border-b border-emerald-100 flex justify-between items-center">
-                    <h3 class="font-black text-emerald-800 uppercase tracking-widest text-lg">Sudah Upload SPTJM</h3>
-                    <span id="badge-sudah" class="bg-emerald-500 text-white text-lg font-bold px-3 py-1 rounded-full">0 Data</span>
-                </div>
-                <div class="max-h-[400px] overflow-y-auto custom-scroll">
+        <!-- 3 TABEL MONITORING KAMPUS (EKSISTING UPLOAD, EKSISTING VERIF, BARU VERIF) -->
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
+            <!-- Tabel 1: Status Upload Penerima Eksisting per Kampus -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col">
+                <label class="block text-[16px] font-black text-slate-700 uppercase tracking-widest mb-3 text-center">Status Upload Eksisting</label>
+                <div class="max-h-[300px] overflow-y-auto border border-slate-100 rounded-xl">
                     <table class="w-full text-left border-collapse">
-                        <thead class="sticky top-0 bg-white shadow-sm">
-                            <tr class="text-lg font-black uppercase text-slate-700 border-b">
-                                <th class="px-6 py-4 w-16">No</th>
-                                <th class="px-6 py-4">Nama Perguruan Tinggi</th>
-                                <th class="px-6 py-4 w-32">Status</th>
+                        <thead class="sticky top-0 z-10 bg-slate-50 shadow-sm">
+                            <tr class="border-b border-slate-100">
+                                <th class="p-1 text-[11px] font-black text-slate-500 uppercase tracking-wider">Universitas</th>
+                                <th class="p-1 text-[11px] font-black text-slate-500 uppercase tracking-wider text-center w-12">Jml</th>
+                                <th class="p-1 text-[11px] font-black text-rose-500 uppercase tracking-wider text-center w-12">Belum</th>
+                                <th class="p-1 text-[11px] font-black text-emerald-600 uppercase tracking-wider text-center w-12">Sudah</th>
+                                <th class="p-1 text-[11px] font-black text-slate-500 uppercase tracking-wider text-center w-16">Prog</th>
                             </tr>
                         </thead>
-                        <tbody id="table-sudah-sptjm" class="text-lg font-bold text-slate-700 divide-y divide-slate-50">
-                            </tbody>
+                        <tbody id="table-eksisting-upload-body" class="divide-y divide-slate-50"></tbody>
                     </table>
                 </div>
             </div>
 
-            <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-                <div class="bg-rose-50 px-6 py-4 border-b border-rose-100 flex justify-between items-center">
-                    <h3 class="font-black text-rose-800 uppercase tracking-widest text-lg">Belum Upload SPTJM</h3>
-                    <span id="badge-belum" class="bg-rose-500 text-white text-lg font-bold px-3 py-1 rounded-full">0 Data</span>
-                </div>
-                <div class="max-h-[400px] overflow-y-auto custom-scroll">
+            <!-- Tabel 2: Status Verifikasi Penerima Eksisting per Kampus -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col">
+                <label class="block text-[16px] font-black text-slate-700 uppercase tracking-widest mb-3 text-center">Status Verif Eksisting</label>
+                <div class="max-h-[300px] overflow-y-auto border border-slate-100 rounded-xl">
                     <table class="w-full text-left border-collapse">
-                        <thead class="sticky top-0 bg-white shadow-sm">
-                            <tr class="text-lg font-black uppercase text-slate-700 border-b">
-                                <th class="px-6 py-4 w-16">No</th>
-                                <th class="px-6 py-4">Nama Perguruan Tinggi</th>
-                                <th class="px-6 py-4 w-32">Status</th>
+                        <thead class="sticky top-0 z-10 bg-slate-50 shadow-sm">
+                            <tr class="border-b border-slate-100">
+                                <th class="p-1 text-[11px] font-black text-slate-500 uppercase tracking-wider">Universitas</th>
+                                <th class="p-1 text-[11px] font-black text-slate-500 uppercase tracking-wider text-center w-12">Jml</th>
+                                <th class="p-1 text-[11px] font-black text-orange-500 uppercase tracking-wider text-center w-12">Belum</th>
+                                <th class="p-1 text-[11px] font-black text-blue-600 uppercase tracking-wider text-center w-12">Sudah</th>
+                                <th class="p-1 text-[11px] font-black text-slate-500 uppercase tracking-wider text-center w-16">Prog</th>
                             </tr>
                         </thead>
-                        <tbody id="table-belum-sptjm" class="text-lg font-bold text-slate-700 divide-y divide-slate-50">
-                            </tbody>
+                        <tbody id="table-eksisting-verif-body" class="divide-y divide-slate-50"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tabel 3: Status Verifikasi Penerima Baru per Kampus -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col">
+                <label class="block text-[16px] font-black text-slate-700 uppercase tracking-widest mb-3 text-center">Status Verif Penerima Baru</label>
+                <div class="max-h-[300px] overflow-y-auto border border-slate-100 rounded-xl">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="sticky top-0 z-10 bg-slate-50 shadow-sm">
+                            <tr class="border-b border-slate-100">
+                                <th class="p-1 text-[11px] font-black text-slate-500 uppercase tracking-wider">Universitas</th>
+                                <th class="p-1 text-[11px] font-black text-slate-500 uppercase tracking-wider text-center w-12">Jml</th>
+                                <th class="p-1 text-[11px] font-black text-orange-500 uppercase tracking-wider text-center w-12">Belum</th>
+                                <th class="p-1 text-[11px] font-black text-blue-600 uppercase tracking-wider text-center w-12">Sudah</th>
+                                <th class="p-1 text-[11px] font-black text-slate-500 uppercase tracking-wider text-center w-16">Prog</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-baru-verif-body" class="divide-y divide-slate-50"></tbody>
                     </table>
                 </div>
             </div>
         </div>
+    </div>
 
+
+    <!-- ================================================================= -->
+    <!-- HALAMAN 2: VIEW DASHBOARD KAMPUS (BNBA)                          -->
+    <!-- ================================================================= -->
+    <div id="view-dashboard" class="max-w-[1600px] mx-auto px-6 py-8 hidden">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-6 mb-8 bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+            <div>
+                <span class="text-xs font-black text-blue-600 uppercase tracking-widest bg-blue-50 px-3 py-1 rounded-full">Dashboard Verifikasi Perguruan Tinggi</span>
+                <h1 id="kampus-title" class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight uppercase mt-2">NAMA UNIVERSITAS</h1>
+                <p class="text-xs font-bold text-slate-400 mt-0.5">Cek status unggah dan verifikasi berkas mahasiswa per perguruan tinggi di sini.</p>
+            </div>
+            <button onclick="handleLogout()" class="bg-rose-600 hover:bg-rose-700 text-white font-black px-6 py-3 rounded-xl text-xs uppercase tracking-widest transition-all shadow-md shadow-rose-200 flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                Keluar Sistem
+            </button>
+        </div>
+
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+                <div>
+                    <label class="block text-xs font-black text-slate-700 uppercase tracking-widest mb-2">Status Upload Berkas</label>
+                    <select id="filter-upload" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-all" onchange="currentPage=0; fetchData()">
+                        <option value="SEMUA">SEMUA STATUS BERKAS</option>
+                        <option value="SUDAH">SUDAH UPLOAD</option>
+                        <option value="BELUM">BELUM UPLOAD</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-black text-slate-700 uppercase tracking-widest mb-2">Verifikasi Kampus</label>
+                    <select id="filter-verif" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-all" onchange="currentPage=0; fetchData()">
+                        <option value="SEMUA">SEMUA STATUS VERIFIKASI</option>
+                        <option value="SUDAH">SUDAH VERIF</option>
+                        <option value="BELUM">BELUM VERIF</option>
+                    </select>
+                </div>
+                <div>
+                    <button id="download-btn" onclick="downloadExcel()" class="w-full bg-slate-900 hover:bg-black text-white font-black py-3 rounded-xl shadow-lg flex items-center justify-center gap-2 text-xs uppercase tracking-widest transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        DOWNLOAD EXCEL BNBA
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-slate-50 px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 border border-b-0 border-slate-200 rounded-t-3xl">
+            <div class="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                Menampilkan <span id="data-count-text" class="text-slate-900">0</span> dari <span id="total-data-text" class="text-slate-900">0</span> data mahasiswa
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="changePage(-1)" id="prev-btn" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-xs font-black disabled:opacity-30 hover:bg-slate-50 uppercase">← Prev</button>
+                <div id="pagination-numbers" class="flex gap-1"></div>
+                <button onclick="changePage(1)" id="next-btn" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-xs font-black disabled:opacity-30 hover:bg-slate-50 uppercase">Next →</button>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-b-3xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table id="main-data-table" class="w-full">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-200 text-center uppercase tracking-widest text-slate-700 text-xs">
+                            <th class="w-no px-2 py-4 font-black">No</th>
+                            <th class="w-mhs px-5 py-4 font-black text-left">Nama / NIM</th>
+                            <th class="w-univ px-5 py-4 font-black text-left">Perguruan Tinggi</th>
+                            <th class="w-prodi px-5 py-4 font-black text-left">Program Studi</th>
+                            <th class="w-kategori px-2 py-4 font-black">Kategori</th>
+                            <th class="w-jenjang px-2 py-4 font-black">Jenjang</th>
+                            <th class="w-smt px-2 py-4 font-black">Semester</th>
+                            <th class="w-ips px-2 py-4 font-black leading-tight">IPS<br><span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Saat Ini/Sebelum</span></th>
+                            <th class="w-ipk px-2 py-4 font-black leading-tight">IPK<br><span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Saat Ini/Sebelum</span></th>
+                            <th class="w-stat px-2 py-4 font-black">Berkas</th>
+                            <th class="w-stat px-2 py-4 font-black">Kampus</th>
+                        </tr>
+                    </thead>
+                    <tbody id="data-table-body" class="divide-y divide-slate-100 font-bold italic"></tbody>
+                </table>
+            </div>
+            <div id="loading" class="hidden py-24 flex justify-center"><div class="animate-spin rounded-full h-12 w-12 border-4 border-slate-100 border-t-blue-600"></div></div>
+            <div id="empty" class="hidden py-24 text-center text-slate-400 font-black uppercase text-sm tracking-widest">Tidak ada data mahasiswa</div>
+        </div>
+    </div>
+
+
+    <!-- Modal Login Popout -->
+    <div id="login-modal" class="fixed inset-0 z-[10000] bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all">
+            <div class="bg-slate-900 p-5 flex justify-between items-center">
+                <h3 class="text-white font-black uppercase tracking-widest text-sm">Login Perguruan Tinggi</h3>
+                <button onclick="closeLoginModal()" class="text-slate-400 hover:text-white transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="p-6">
+                <p class="text-[12px] font-bold text-slate-500 uppercase tracking-wider bg-slate-50 border border-slate-200 rounded-xl p-3 mb-5 text-center leading-relaxed">
+                    Gunakan username dan password <br>yang sama dari website KJMU
+                </p>
+                <form id="login-form" onsubmit="handleLogin(event)">
+                    <div class="mb-4">
+                        <label class="block text-xs font-black text-slate-700 uppercase tracking-widest mb-2">Username</label>
+                        <input type="text" id="login-username" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 focus:bg-white transition-all" placeholder="Masukkan username">
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-xs font-black text-slate-700 uppercase tracking-widest mb-2">Password</label>
+                        <input type="password" id="login-password" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 focus:bg-white transition-all" placeholder="Masukkan password">
+                    </div>
+                    
+                    <div id="login-error" class="hidden mb-4 p-3 bg-rose-50 text-rose-600 border border-rose-200 rounded-xl text-xs font-bold text-center"></div>
+                    
+                    <button type="submit" id="btn-submit-login" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3.5 rounded-xl text-xs uppercase tracking-widest transition-all active:scale-95 flex justify-center items-center gap-2">
+                        <span>Masuk Sistem</span>
+                    </button>
+                </form>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        const SUPABASE_URL = 'https://fmbbktdjcsveihocgfjj.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZtYmJrdGRqY3N2ZWlob2NnZmpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5OTk5NzIsImV4cCI6MjA4ODU3NTk3Mn0.Esh5t2_gf16MO6ISxawYsoigOqSUl0-3oDi0SiSFzoQ';
+        const SUPABASE_URL = 'https://qaacbqersenrhsgvnirm.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhYWNicWVyc2VucmhzZ3ZuaXJtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg2NjUwMzIsImV4cCI6MjEwNDI0MTAzMn0.IA10kZASFgaNJwvCewubwtVFVrMeeR2z7VoOMM9-hnc';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        const TABLE_NAME = 'progres'; 
+        const PAGE_SIZE = 20;
+        let currentPage = 0;
+        let totalRows = 0;
+        let loggedInUniv = "";
 
-        // Fungsi Tambahan untuk Toggle Pop-out Pedoman
+        const checkUpload = (status) => status !== "Verifikasi Lanjutan dan Upload Berkas";
+        const checkVerif = (status) => status === "Persetujuan Pimpinan Perguruan Tinggi";
+
         function toggleInstruction() {
             const box = document.getElementById('instruction-box');
             const btn = document.getElementById('expand-btn');
-            
             if (box.classList.contains('hidden')) {
                 box.classList.remove('hidden');
                 btn.classList.add('hidden');
@@ -253,112 +526,538 @@
             }
         }
         
-        async function loadDashboardData() {
-            try {
-                // Fetch Progres
-                let progresData = [];
-                let from = 0; let step = 1000; let keepFetching = true;
-                while (keepFetching) {
-                    const { data, error } = await supabaseClient.from('progres').select('NAMA_UNIVERSITAS, nm_status, JenisPT').range(from, from + step - 1);
-                    if (error) break;
-                    if (data && data.length > 0) { progresData = [...progresData, ...data]; from += step; if (data.length < step) keepFetching = false; } else { keepFetching = false; }
-                }
-
-                // Fetch SPTJM (ambil kolom nama dan uploaddokumen)
-                let sptjmData = [];
-                from = 0; keepFetching = true;
-                while (keepFetching) {
-                    const { data, error } = await supabaseClient.from('SPTJM').select('nama, uploaddokumen').range(from, from + step - 1);
-                    if (error) break;
-                    if (data && data.length > 0) { sptjmData = [...sptjmData, ...data]; from += step; if (data.length < step) keepFetching = false; } else { keepFetching = false; }
-                }
-
-                if (progresData.length === 0) return;
-
-                // Box 1 Stats
-                const totalMhs = progresData.length;
-                const uniqueUnivs = new Set(progresData.map(d => d.NAMA_UNIVERSITAS)).size;
-                const ptnCount = new Set(progresData.filter(d => d.JenisPT === "PTN").map(d => d.NAMA_UNIVERSITAS)).size;
-                const ptsCount = new Set(progresData.filter(d => d.JenisPT === "PTS").map(d => d.NAMA_UNIVERSITAS)).size;
-
-                document.getElementById('stat-total-mhs').innerText = totalMhs.toLocaleString('id-ID');
-                document.getElementById('stat-total-univ').innerText = uniqueUnivs.toLocaleString('id-ID');
-                document.getElementById('stat-total-ptn').innerText = ptnCount.toLocaleString('id-ID');
-                document.getElementById('stat-total-pts').innerText = ptsCount.toLocaleString('id-ID');
-
-                // Box 2 Stats & Table Logic
-                const belumVerif = progresData.filter(r => r.nm_status === "Verifikasi Perguruan Tinggi").length;
-                const sudahVerif = progresData.filter(r => 
-                    r.nm_status === "Persetujuan Pimpinan Perguruan Tinggi" || 
-                    r.nm_status === "Proses Verifikasi Dinas Pendidikan dan Penetapan Kepgub" || 
-                    r.nm_status === "Dibatalkan Oleh Kampus"
-                ).length;
-
-                const listSudah = sptjmData.filter(item => item.uploaddokumen !== null && item.uploaddokumen !== '');
-                const listBelum = sptjmData.filter(item => item.uploaddokumen === null || item.uploaddokumen === '');
-
-                document.getElementById('count-belum-verif').innerText = belumVerif.toLocaleString('id-ID');
-                document.getElementById('count-sudah-verif').innerText = sudahVerif.toLocaleString('id-ID');
-                document.getElementById('count-sudah-sptjm').innerText = listSudah.length.toLocaleString('id-ID');
-                document.getElementById('count-belum-sptjm').innerText = listBelum.length.toLocaleString('id-ID');
-
-                // Render Table Sudah Upload
-                const tbodySudah = document.getElementById('table-sudah-sptjm');
-                document.getElementById('badge-sudah').innerText = `${listSudah.length} Kampus`;
-                tbodySudah.innerHTML = listSudah.map((item, index) => `
-                    <tr class="hover:bg-emerald-50/30 transition-colors">
-                        <td class="px-6 py-4 text-slate-700 font-medium">${index + 1}</td>
-                        <td class="px-6 py-4 uppercase tracking-tight">${item.nama || '-'}</td>
-                        <td class="px-6 py-4"><span class="text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md text-lg">Selesai</span></td>
-                    </tr>
-                `).join('');
-
-                // Render Table Belum Upload
-                const tbodyBelum = document.getElementById('table-belum-sptjm');
-                document.getElementById('badge-belum').innerText = `${listBelum.length} Kampus`;
-                tbodyBelum.innerHTML = listBelum.map((item, index) => `
-                    <tr class="hover:bg-rose-50/30 transition-colors">
-                        <td class="px-6 py-4 text-slate-700 font-medium">${index + 1}</td>
-                        <td class="px-6 py-4 uppercase tracking-tight">${item.nama || '-'}</td>
-                        <td class="px-6 py-4"><span class="text-rose-600 bg-rose-50 px-2 py-1 rounded-md text-lg">Belum</span></td>
-                    </tr>
-                `).join('');
-
-                const p1 = ((sudahVerif / totalMhs) * 100).toFixed(2);
-                document.getElementById('percent-upload').innerText = p1 + '%';
-                document.getElementById('percent-verif').innerText = (100 - p1).toFixed(2) + '%';
-                document.getElementById('bar-upload').style.width = p1 + '%';
-                document.getElementById('bar-verif').style.width = (100 - p1) + '%';
-
-                document.getElementById('global-loader').style.display = 'none';
-
-                // Munculkan instruksi setelah loader hilang
-                setTimeout(() => {
-                    const box = document.getElementById('instruction-box');
-                    if(box) box.classList.remove('hidden');
-                }, 1000);
-
-            } catch (err) { console.error(err); }
+        function openLoginModal() {
+            document.getElementById('login-modal').classList.remove('hidden');
         }
+
+        function closeLoginModal() {
+            document.getElementById('login-modal').classList.add('hidden');
+            document.getElementById('login-error').classList.add('hidden');
+            document.getElementById('login-form').reset();
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-submit-login');
+            const errorBox = document.getElementById('login-error');
+            
+            const username = document.getElementById('login-username').value.trim();
+            const password = document.getElementById('login-password').value.trim();
+
+            btn.disabled = true;
+            btn.innerHTML = 'MEMPROSES...';
+            errorBox.classList.add('hidden');
+
+            try {
+                const { data, error } = await supabaseClient.rpc('cek_login_kampus', { 
+                    p_user: username, 
+                    p_pass: password 
+                });
+
+                if (error || !data || data.length === 0 || data[0].is_valid !== true) {
+                    errorBox.innerText = "Username atau password salah!";
+                    errorBox.classList.remove('hidden');
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>Masuk Sistem</span>';
+                } else {
+                    loggedInUniv = data[0].nama; 
+                    localStorage.setItem('loggedInUniv', loggedInUniv);
+                    closeLoginModal();
+                    
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>Masuk Sistem</span>';
+
+                    document.getElementById('view-landing').classList.add('hidden');
+                    document.getElementById('view-dashboard').classList.remove('hidden');
+                    document.getElementById('kampus-title').innerText = loggedInUniv;
+
+                    currentPage = 0;
+                    fetchData();
+                }
+            } catch (err) {
+                console.error("CRITICAL ERROR:", err);
+                errorBox.innerText = "Terjadi kesalahan internal.";
+                errorBox.classList.remove('hidden');
+                btn.disabled = false;
+                btn.innerHTML = '<span>Masuk Sistem</span>';
+            }
+        }
+
+        function handleLogout() {
+            loggedInUniv = "";
+            localStorage.removeItem('loggedInUniv');
+            document.getElementById('view-dashboard').classList.add('hidden');
+            document.getElementById('view-landing').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        async function updateStats() {
+            try {
+                let allStats = [];
+                let keepFetching = true;
+                let from = 0;
+                const step = 1000;
+
+                while (keepFetching) {
+                    const { data, error } = await supabaseClient
+                        .from(TABLE_NAME)
+                        .select('NAMA_UNIVERSITAS, JenisPT, nm_status, Kategori, JENIS_PENERIMA, Jenjang') 
+                        .range(from, from + step - 1);
+
+                    if (error) break;
+                    if (data && data.length > 0) {
+                        allStats = [...allStats, ...data];
+                        from += step;
+                        if (data.length < step) keepFetching = false;
+                    } else {
+                        keepFetching = false;
+                    }
+                }
+
+                if (allStats.length === 0) {
+                    const loaderEmpty = document.getElementById('global-loader');
+                    if (loaderEmpty) {
+                        loaderEmpty.style.opacity = '0';
+                        setTimeout(() => loaderEmpty.style.display = 'none', 300);
+                    }
+                    return;
+                }
+
+                // Data struktur untuk menampung kalkulasi jenjang x jenisPT dinamis
+                let stats = {
+                    eksisting: {
+                        penerima: 0, kampusSet: new Set(), uploadSudah: 0, uploadBelum: 0,
+                        ptnTotal: 0, ptsTotal: 0,
+                        jenjang: {
+                            'D3': { ptn: 0, pts: 0 },
+                            'D4': { ptn: 0, pts: 0 },
+                            'S1': { ptn: 0, pts: 0 },
+                            'Profesi': { ptn: 0, pts: 0 }
+                        }
+                    },
+                    baru: {
+                        penerima: 0, kampusSet: new Set(), verifSudah: 0, verifBelum: 0,
+                        ptnTotal: 0, ptsTotal: 0,
+                        jenjang: {
+                            'D3': { ptn: 0, pts: 0 },
+                            'D4': { ptn: 0, pts: 0 },
+                            'S1': { ptn: 0, pts: 0 },
+                            'Profesi': { ptn: 0, pts: 0 }
+                        }
+                    },
+                    keseluruhan: {
+                        total: 0, uploadSudah: 0, uploadBelum: 0, verifSudah: 0, verifBelum: 0
+                    }
+                };
+
+                const kampusMap = {};
+
+                allStats.forEach(row => {
+                    const isBaru = (row.Kategori && row.Kategori.toLowerCase().includes('baru')) || 
+                                   (row.JENIS_PENERIMA && row.JENIS_PENERIMA.toLowerCase().includes('baru'));
+                    
+                    // Identifikasi Tipe PT (Negeri = PTN, selain itu = PTS)
+                    const isPTN = (row.JenisPT && row.JenisPT.toLowerCase().includes('negeri'));
+                    const univ = row.NAMA_UNIVERSITAS || "TIDAK DIKETAHUI";
+                    
+                    // Validasi Jenjang, default ke S1 jika kosong atau tidak match
+                    let jnj = row.Jenjang || 'S1';
+                    if (!['D3', 'D4', 'S1', 'Profesi'].includes(jnj)) jnj = 'S1';
+
+                    const isUploadSudah = checkUpload(row.nm_status);
+                    const isVerifSudah = checkVerif(row.nm_status);
+
+                    if (!kampusMap[univ]) {
+                        kampusMap[univ] = { 
+                            eksisting: { penerima: 0, uploadBelum: 0, uploadSudah: 0, verifBelum: 0, verifSudah: 0 },
+                            baru: { penerima: 0, verifBelum: 0, verifSudah: 0 }
+                        };
+                    }
+
+                    stats.keseluruhan.total++;
+                    if (isUploadSudah) stats.keseluruhan.uploadSudah++; else stats.keseluruhan.uploadBelum++;
+                    if (isVerifSudah) stats.keseluruhan.verifSudah++; else stats.keseluruhan.verifBelum++;
+
+                    if (!isBaru) {
+                        // Data Eksisting
+                        kampusMap[univ].eksisting.penerima++;
+                        if (isUploadSudah) kampusMap[univ].eksisting.uploadSudah++; else kampusMap[univ].eksisting.uploadBelum++;
+                        if (isVerifSudah) kampusMap[univ].eksisting.verifSudah++; else kampusMap[univ].eksisting.verifBelum++;
+
+                        stats.eksisting.penerima++;
+                        stats.eksisting.kampusSet.add(univ);
+                        if (isUploadSudah) stats.eksisting.uploadSudah++; else stats.eksisting.uploadBelum++;
+
+                        if (isPTN) {
+                            stats.eksisting.ptnTotal++;
+                            stats.eksisting.jenjang[jnj].ptn++;
+                        } else {
+                            stats.eksisting.ptsTotal++;
+                            stats.eksisting.jenjang[jnj].pts++;
+                        }
+                    } else {
+                        // Data Penerima Baru
+                        kampusMap[univ].baru.penerima++;
+                        if (isVerifSudah) kampusMap[univ].baru.verifSudah++; else kampusMap[univ].baru.verifBelum++;
+
+                        stats.baru.penerima++;
+                        stats.baru.kampusSet.add(univ);
+                        if (isVerifSudah) stats.baru.verifSudah++; else stats.baru.verifBelum++;
+
+                        if (isPTN) {
+                            stats.baru.ptnTotal++;
+                            stats.baru.jenjang[jnj].ptn++;
+                        } else {
+                            stats.baru.ptsTotal++;
+                            stats.baru.jenjang[jnj].pts++;
+                        }
+                    }
+                });
+
+                // Helper Format Angka & Persentase
+                const fmt = (num) => num.toLocaleString('id-ID');
+                const pct = (part, whole) => whole > 0 ? ((part / whole) * 100).toFixed(1) + '%' : '0%';
+
+                // Top Progress Bar
+                const totalMhs = stats.keseluruhan.total;
+                const p1 = totalMhs > 0 ? ((stats.keseluruhan.verifSudah / totalMhs) * 100).toFixed(2) : "0.00";
+                const p2 = totalMhs > 0 ? ((stats.keseluruhan.verifBelum / totalMhs) * 100).toFixed(2) : "0.00";
+                document.getElementById('percent-upload').innerText = p1 + '%';
+                document.getElementById('percent-verif').innerText = p2 + '%';
+                document.getElementById('bar-upload').style.width = p1 + '%';
+                document.getElementById('bar-verif').style.width = p2 + '%';
+
+                // ================= INJECTION KOTAK 1 (Eksisting) =================
+                document.getElementById('eks-penerima').innerText = fmt(stats.eksisting.penerima);
+                document.getElementById('eks-kampus').innerText = fmt(stats.eksisting.kampusSet.size);
+                document.getElementById('eks-ptn').innerText = fmt(stats.eksisting.ptnTotal);
+                document.getElementById('eks-pts').innerText = fmt(stats.eksisting.ptsTotal);
+                document.getElementById('eks-upload-sudah').innerText = fmt(stats.eksisting.uploadSudah);
+                document.getElementById('eks-upload-belum').innerText = fmt(stats.eksisting.uploadBelum);
+
+                ['D3', 'D4', 'S1', 'Profesi'].forEach(j => {
+                    const rPTN = stats.eksisting.jenjang[j].ptn;
+                    const rPTS = stats.eksisting.jenjang[j].pts;
+                    const rTot = rPTN + rPTS;
+                    document.getElementById(`eks-${j.toLowerCase()}-ptn`).innerText = fmt(rPTN);
+                    document.getElementById(`eks-${j.toLowerCase()}-pts`).innerText = fmt(rPTS);
+                    document.getElementById(`eks-${j.toLowerCase()}-tot`).innerText = fmt(rTot);
+                    document.getElementById(`eks-${j.toLowerCase()}-pct`).innerText = pct(rTot, stats.eksisting.penerima);
+                });
+                document.getElementById('eks-tot-ptn').innerText = fmt(stats.eksisting.ptnTotal);
+                document.getElementById('eks-tot-pts').innerText = fmt(stats.eksisting.ptsTotal);
+                document.getElementById('eks-tot-tot').innerText = fmt(stats.eksisting.penerima);
+
+                // ================= INJECTION KOTAK 2 (Penerima Baru) =================
+                document.getElementById('baru-penerima').innerText = fmt(stats.baru.penerima);
+                document.getElementById('baru-kampus').innerText = fmt(stats.baru.kampusSet.size);
+                document.getElementById('baru-ptn').innerText = fmt(stats.baru.ptnTotal);
+                document.getElementById('baru-pts').innerText = fmt(stats.baru.ptsTotal);
+                document.getElementById('baru-verif-sudah').innerText = fmt(stats.baru.verifSudah);
+                document.getElementById('baru-verif-belum').innerText = fmt(stats.baru.verifBelum);
+
+                ['D3', 'D4', 'S1', 'Profesi'].forEach(j => {
+                    const rPTN = stats.baru.jenjang[j].ptn;
+                    const rPTS = stats.baru.jenjang[j].pts;
+                    const rTot = rPTN + rPTS;
+                    document.getElementById(`baru-${j.toLowerCase()}-ptn`).innerText = fmt(rPTN);
+                    document.getElementById(`baru-${j.toLowerCase()}-pts`).innerText = fmt(rPTS);
+                    document.getElementById(`baru-${j.toLowerCase()}-tot`).innerText = fmt(rTot);
+                    document.getElementById(`baru-${j.toLowerCase()}-pct`).innerText = pct(rTot, stats.baru.penerima);
+                });
+                document.getElementById('baru-tot-ptn').innerText = fmt(stats.baru.ptnTotal);
+                document.getElementById('baru-tot-pts').innerText = fmt(stats.baru.ptsTotal);
+                document.getElementById('baru-tot-tot').innerText = fmt(stats.baru.penerima);
+
+                // ================= INJECTION KOTAK 3 (Total Keseluruhan) =================
+                document.getElementById('all-berkas-sudah').innerText = fmt(stats.keseluruhan.uploadSudah);
+                document.getElementById('all-berkas-sudah-pct').innerText = pct(stats.keseluruhan.uploadSudah, stats.keseluruhan.total);
+                document.getElementById('all-berkas-belum').innerText = fmt(stats.keseluruhan.uploadBelum);
+                document.getElementById('all-berkas-belum-pct').innerText = pct(stats.keseluruhan.uploadBelum, stats.keseluruhan.total);
+                document.getElementById('all-berkas-tot').innerText = fmt(stats.keseluruhan.total);
+
+                document.getElementById('all-verif-sudah').innerText = fmt(stats.keseluruhan.verifSudah);
+                document.getElementById('all-verif-sudah-pct').innerText = pct(stats.keseluruhan.verifSudah, stats.keseluruhan.total);
+                document.getElementById('all-verif-belum').innerText = fmt(stats.keseluruhan.verifBelum);
+                document.getElementById('all-verif-belum-pct').innerText = pct(stats.keseluruhan.verifBelum, stats.keseluruhan.total);
+                document.getElementById('all-verif-tot').innerText = fmt(stats.keseluruhan.total);
+
+                globalKampusData = kampusMap; 
+                renderTables(); 
+                
+                const loader = document.getElementById('global-loader');
+                if (loader) {
+                    loader.style.opacity = '0';
+                    setTimeout(() => loader.style.display = 'none', 300);
+                }
+            } catch (err) {
+                const loader = document.getElementById('global-loader');
+                if (loader) loader.style.display = 'none';
+            }
+        }
+
+        let globalKampusData = {};
+        function renderTables() {
+            const tEksUpload = document.getElementById('table-eksisting-upload-body');
+            const tEksVerif = document.getElementById('table-eksisting-verif-body');
+            const tBaruVerif = document.getElementById('table-baru-verif-body');
+            
+            if (!tEksUpload || !tEksVerif || !tBaruVerif) return;
+
+            tEksUpload.innerHTML = '';
+            tEksVerif.innerHTML = '';
+            tBaruVerif.innerHTML = '';
+
+            Object.keys(globalKampusData).forEach(univ => {
+                const eks = globalKampusData[univ].eksisting;
+                const bar = globalKampusData[univ].baru;
+
+                const pUpEks = eks.penerima > 0 ? ((eks.uploadSudah / eks.penerima) * 100).toFixed(1) : 0;
+                const pVerEks = eks.penerima > 0 ? ((eks.verifSudah / eks.penerima) * 100).toFixed(1) : 0;
+                const pVerBaru = bar.penerima > 0 ? ((bar.verifSudah / bar.penerima) * 100).toFixed(1) : 0;
+
+                // 1. Status Upload Eksisting
+                tEksUpload.insertAdjacentHTML('beforeend', `
+                    <tr class="hover:bg-slate-50 border-b border-slate-50 h-7">
+                        <td class="py-1 px-2 leading-none text-[11px] font-bold text-slate-700 uppercase break-words">${univ}</td>
+                        <td class="py-1 px-1 leading-none text-[11px] font-black text-center">${eks.penerima}</td>
+                        <td class="py-1 px-1 leading-none text-[11px] font-black text-rose-600 text-center">${eks.uploadBelum}</td>
+                        <td class="py-1 px-1 leading-none text-[11px] font-black text-emerald-600 text-center">${eks.uploadSudah}</td>
+                        <td class="py-1 px-1 leading-none text-center"><span class="text-[11px] font-black text-blue-600">${pUpEks}%</span></td>
+                    </tr>`);
+
+                // 2. Status Verifikasi Eksisting
+                tEksVerif.insertAdjacentHTML('beforeend', `
+                    <tr class="hover:bg-slate-50 border-b border-slate-50 h-7">
+                        <td class="py-1 px-2 leading-none text-[11px] font-bold text-slate-700 uppercase break-words">${univ}</td>
+                        <td class="py-1 px-1 leading-none text-[11px] font-black text-center">${eks.penerima}</td>
+                        <td class="py-1 px-1 leading-none text-[11px] font-black text-orange-500 text-center">${eks.verifBelum}</td>
+                        <td class="py-1 px-1 leading-none text-[11px] font-black text-blue-600 text-center">${eks.verifSudah}</td>
+                        <td class="py-1 px-1 leading-none text-center"><span class="text-[11px] font-black text-emerald-600">${pVerEks}%</span></td>
+                    </tr>`);
+
+                // 3. Status Verifikasi Penerima Baru
+                tBaruVerif.insertAdjacentHTML('beforeend', `
+                    <tr class="hover:bg-slate-50 border-b border-slate-50 h-7">
+                        <td class="py-1 px-2 leading-none text-[11px] font-bold text-slate-700 uppercase break-words">${univ}</td>
+                        <td class="py-1 px-1 leading-none text-[11px] font-black text-center">${bar.penerima}</td>
+                        <td class="py-1 px-1 leading-none text-[11px] font-black text-orange-500 text-center">${bar.verifBelum}</td>
+                        <td class="py-1 px-1 leading-none text-[11px] font-black text-blue-600 text-center">${bar.verifSudah}</td>
+                        <td class="py-1 px-1 leading-none text-center"><span class="text-[11px] font-black text-emerald-600">${pVerBaru}%</span></td>
+                    </tr>`);
+            });
+        }
+
+        async function fetchData() {
+            const body = document.getElementById('data-table-body');
+            const loading = document.getElementById('loading');
+            const empty = document.getElementById('empty');
+            
+            if(!body) return;
+            body.innerHTML = ''; 
+            loading.classList.remove('hidden'); 
+            empty.classList.add('hidden');
+
+            const fUpload = document.getElementById('filter-upload').value; 
+            const fVerif = document.getElementById('filter-verif').value;   
+            
+            const start = currentPage * PAGE_SIZE;
+            const end = start + PAGE_SIZE - 1;
+
+            let query = supabaseClient.from(TABLE_NAME).select('*', { count: 'exact' });
+
+            if (loggedInUniv) {
+                query = query.eq('NAMA_UNIVERSITAS', loggedInUniv);
+            } else {
+                loading.classList.add('hidden');
+                return;
+            }
+
+            if (fUpload === 'SUDAH') query = query.neq('nm_status', 'Verifikasi Lanjutan dan Upload Berkas');
+            else if (fUpload === 'BELUM') query = query.eq('nm_status', 'Verifikasi Lanjutan dan Upload Berkas');
+
+            if (fVerif === 'SUDAH') query = query.eq('nm_status', 'Persetujuan Pimpinan Perguruan Tinggi');
+            else if (fVerif === 'BELUM') query = query.neq('nm_status', 'Persetujuan Pimpinan Perguruan Tinggi');
+
+            const { data, error, count } = await query.order('NAMA_SISWA', { ascending: true }).range(start, end);
+
+            loading.classList.add('hidden');
+            if (error || !data || data.length === 0) { 
+                empty.classList.remove('hidden'); 
+                document.getElementById('total-data-text').innerText = "0";
+                document.getElementById('data-count-text').innerText = "0";
+                return; 
+            }
+
+            totalRows = count || 0;
+            document.getElementById('total-data-text').innerText = totalRows.toLocaleString('id-ID');
+            document.getElementById('data-count-text').innerText = data.length;
+            document.getElementById('prev-btn').disabled = (currentPage === 0);
+            document.getElementById('next-btn').disabled = (end >= totalRows - 1);
+            
+            renderPageNumbers();
+
+            body.innerHTML = data.map((row, index) => {
+                const isUploadDone = checkUpload(row.nm_status);
+                const isVerifDone = checkVerif(row.nm_status);
+                
+                return `
+                <tr class="hover:bg-slate-50 transition-all border-b border-slate-50">
+                    <td class="text-center font-black text-slate-400 text-xs">${start + index + 1}</td>
+                    <td class="px-5">
+                        <div class="font-black text-slate-800 uppercase leading-tight text-[14px] not-italic">${row.NAMA_SISWA || '-'}</div>
+                        <div class="text-[11px] text-slate-400 font-black mt-1 not-italic">NIM: ${row.NIM || '-'}</div>
+                    </td>
+                    <td class="px-5 text-blue-700 font-bold text-[13px] not-italic">${row.NAMA_UNIVERSITAS || '-'}</td>
+                    <td class="px-5 text-slate-600 text-[13px] not-italic">${row.PRODI || '-'}</td>
+                    <td class="text-center">
+                        <span class="px-3 py-1 ${(row.Kategori || '').toLowerCase().includes('baru') ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'} rounded-full text-[10px] font-bold not-italic uppercase">${row.Kategori || row.JENIS_PENERIMA || '-'}</span>
+                    </td>
+                    <td class="text-center font-black text-slate-700 not-italic">${row.Jenjang || '-'}</td>
+                    <td class="text-center font-black text-slate-700 not-italic">${row.Semester || '-'}</td>
+                    <td class="text-center text-[12px] font-bold text-slate-600 not-italic">
+                        <div class="text-blue-600 text-slate-800">Saat ini: ${row.IPS_Saat_Ini || '0.00'}</div>
+                        <div class="text-[12px] text-slate-400">Sebelum: ${row.IPS_Sebelumnya || '0.00'}</div>
+                    </td>
+                    <td class="text-center text-[12px] font-bold text-slate-600 not-italic">
+                        <div class="text-emerald-600 text-slate-800">Saat ini: ${row.IPK_Saat_Ini || '0.00'}</div>
+                        <div class="text-[12px] text-slate-400">Sebelum: ${row.IPK_Sebelumnya || '0.00'}</div>
+                    </td>
+                    <td class="text-center px-3">
+                        <span class="block w-full py-2 rounded-lg text-[11px] font-black tracking-widest not-italic ${isUploadDone ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}">
+                            ${isUploadDone ? 'SUDAH' : 'BELUM'}
+                        </span>
+                    </td>
+                    <td class="text-center px-3">
+                        <span class="block w-full py-2 rounded-lg text-[11px] font-black tracking-widest not-italic ${isVerifDone ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}">
+                            ${isVerifDone ? 'SUDAH' : 'BELUM'}
+                        </span>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function renderPageNumbers() {
+            const container = document.getElementById('pagination-numbers');
+            container.innerHTML = '';
+            const totalPages = Math.ceil(totalRows / PAGE_SIZE);
+            if(totalPages <= 1) return;
+            let start = Math.max(0, currentPage - 1);
+            let end = Math.min(totalPages, start + 3);
+            for (let i = start; i < end; i++) {
+                const btn = document.createElement('button');
+                btn.innerText = i + 1;
+                btn.className = `px-3 py-1.5 rounded-lg text-xs font-bold ${i === currentPage ? 'bg-slate-900 text-white' : 'bg-white border border-slate-200 text-slate-600'}`;
+                btn.onclick = () => { currentPage = i; fetchData(); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+                container.appendChild(btn);
+            }
+        }
+
+        async function downloadExcel() {
+            try {
+                let allData = [];
+                let keepFetching = true;
+                let from = 0;
+                const step = 1000;
+
+                const fUpload = document.getElementById('filter-upload').value;
+                const fVerif = document.getElementById('filter-verif').value;
+
+                while (keepFetching) {
+                    let query = supabaseClient.from(TABLE_NAME).select('*').eq('NAMA_UNIVERSITAS', loggedInUniv);
+
+                    if (fUpload === 'SUDAH') query = query.neq('nm_status', 'Verifikasi Lanjutan dan Upload Berkas');
+                    else if (fUpload === 'BELUM') query = query.eq('nm_status', 'Verifikasi Lanjutan dan Upload Berkas');
+
+                    if (fVerif === 'SUDAH') query = query.eq('nm_status', 'Persetujuan Pimpinan Perguruan Tinggi');
+                    else if (fVerif === 'BELUM') query = query.neq('nm_status', 'Persetujuan Pimpinan Perguruan Tinggi');
+
+                    const { data, error } = await query.range(from, from + step - 1);
+                    if (error) throw error;
+                    if (data && data.length > 0) {
+                        allData = [...allData, ...data];
+                        from += step;
+                        if (data.length < step) keepFetching = false;
+                    } else {
+                        keepFetching = false;
+                    }
+                }
+
+                if (allData.length > 0) {
+                    const exportData = allData.map((row, index) => ({
+                        "NO": index + 1,
+                        "NAMA MAHASISWA": row.NAMA_SISWA || '-',
+                        "NIM": row.NIM || '-',
+                        "UNIVERSITAS": row.NAMA_UNIVERSITAS || '-',
+                        "PRODI": row.PRODI || '-',
+                        "KATEGORI": row.Kategori || row.JENIS_PENERIMA || '-',
+                        "JENJANG": row.Jenjang || '-',
+                        "SEMESTER": row.Semester || '-',
+                        "IPS SAAT INI": row.IPS_Saat_Ini || '-',
+                        "IPS SEBELUMNYA": row.IPS_Sebelumnya || '-',
+                        "IPK SAAT INI": row.IPK_Saat_Ini || '-',
+                        "IPK SEBELUMNYA": row.IPK_Sebelumnya || '-',
+                        "STATUS BERKAS": checkUpload(row.nm_status) ? "SUDAH" : "BELUM",
+                        "VERIF KAMPUS": checkVerif(row.nm_status) ? "SUDAH" : "BELUM",
+                        "STATUS SISTEM": row.nm_status || '-'
+                    }));    
+
+                    const ws = XLSX.utils.json_to_sheet(exportData);
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, "BNBA Mahasiswa");
+                    XLSX.writeFile(wb, `BNBA_${loggedInUniv.replace(/\s+/g, '_')}_${new Date().getTime()}.xlsx`);
+                } else {
+                    alert("Tidak ada data untuk diunduh");
+                }
+            } catch (err) {
+                alert("Gagal mengunduh berkas: " + err.message);
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const today = new Date().toLocaleDateString('id-ID', options);
+            const dateEl = document.getElementById('current-date');
+            if(dateEl) dateEl.innerText = today;
+
+            updateStats(); 
+            startCountdown();
+
+            const savedUniv = localStorage.getItem('loggedInUniv');
+            if (savedUniv) {
+                loggedInUniv = savedUniv;
+                document.getElementById('view-landing').classList.add('hidden');
+                document.getElementById('view-dashboard').classList.remove('hidden');
+                document.getElementById('kampus-title').innerText = loggedInUniv;
+                currentPage = 0;
+                fetchData();
+            }
+        });
 
         function startCountdown() {
             const targetDate = new Date("April 08, 2026 23:59:59").getTime();
-            setInterval(() => {
+
+            const timer = setInterval(() => {
                 const now = new Date().getTime();
                 const distance = targetDate - now;
-                if (distance < 0) return;
-                document.getElementById("cd-days").innerText = Math.floor(distance / (1000 * 60 * 60 * 24)).toString().padStart(2, '0');
-                document.getElementById("cd-hours").innerText = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)).toString().padStart(2, '0');
-                document.getElementById("cd-minutes").innerText = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0');
+
+                if (distance < 0) {
+                    clearInterval(timer);
+                    document.querySelectorAll("[id^='cd-']").forEach(el => el.innerText = "00");
+                    return;
+                }
+
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                if(document.getElementById("cd-days")) document.getElementById("cd-days").innerText = days.toString().padStart(2, '0');
+                if(document.getElementById("cd-hours")) document.getElementById("cd-hours").innerText = hours.toString().padStart(2, '0');
+                if(document.getElementById("cd-minutes")) document.getElementById("cd-minutes").innerText = minutes.toString().padStart(2, '0');
+                if(document.getElementById("cd-seconds")) document.getElementById("cd-seconds").innerText = seconds.toString().padStart(2, '0');
             }, 1000);
         }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            document.getElementById('current-date').innerText = new Date().toLocaleDateString('id-ID', options);
-            loadDashboardData();
-            startCountdown();
-        });
     </script>
 </body>
 </html>
