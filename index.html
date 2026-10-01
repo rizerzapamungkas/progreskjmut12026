@@ -134,7 +134,7 @@
                         </h2>
                         <span class="hidden md:block text-slate-300">|</span>
                         <span class="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-1 rounded-md">
-                            Update Data 1 Oktober 2026 - 10.00 WIB
+                            Data otomatis terupdate setiap 1 jam
                         </span>
                     </div>
                 </div>
@@ -216,7 +216,7 @@
                     <div class="xl:col-span-5 border border-slate-200 rounded-xl overflow-hidden shadow-sm flex flex-col justify-between">
                         <table class="w-full text-sm text-left h-full">
                             <tbody class="text-xs font-bold text-slate-600">
-                                <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors h-[34px]"><td class="py-1 px-3 uppercase tracking-wider text-[11px] align-middle">Jumlah Pendaftar</td><td id="baru-penerima" class="py-1 px-3 font-black text-slate-900 text-right text-[13px] align-middle">0</td></tr>
+                                <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors h-[34px]"><td class="py-1 px-3 uppercase tracking-wider text-[11px] align-middle">Jumlah Penerima</td><td id="baru-penerima" class="py-1 px-3 font-black text-slate-900 text-right text-[13px] align-middle">0</td></tr>
                                 <tr class="border-b border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors h-[34px]"><td class="py-1 px-3 uppercase tracking-wider text-[11px] align-middle">Jumlah Kampus</td><td id="baru-kampus" class="py-1 px-3 font-black text-slate-900 text-right text-[13px] align-middle">0</td></tr>
                                 <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors h-[34px]"><td class="py-1 px-3 uppercase tracking-wider text-[11px] align-middle">Jumlah PTN</td><td id="baru-ptn" class="py-1 px-3 font-black text-blue-600 text-right text-[13px] align-middle">0</td></tr>
                                 <tr class="border-b border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors h-[34px]"><td class="py-1 px-3 uppercase tracking-wider text-[11px] align-middle">Jumlah PTS</td><td id="baru-pts" class="py-1 px-3 font-black text-orange-600 text-right text-[13px] align-middle">0</td></tr>
@@ -332,11 +332,11 @@
                     <table class="w-full text-left border-collapse">
                         <thead class="sticky top-0 z-10 bg-slate-50 shadow-sm">
                             <tr class="border-b border-slate-100">
-                                <th class="p-1 text-[11px] font-black text-slate-500 uppercase tracking-wider">Universitas</th>
-                                <th class="p-1 text-[11px] font-black text-slate-500 uppercase tracking-wider text-center w-12">Jml</th>
-                                <th class="p-1 text-[11px] font-black text-rose-500 uppercase tracking-wider text-center w-12">Belum</th>
-                                <th class="p-1 text-[11px] font-black text-emerald-600 uppercase tracking-wider text-center w-12">Sudah</th>
-                                <th class="p-1 text-[11px] font-black text-slate-500 uppercase tracking-wider text-center w-16">Prog</th>
+                                <th data-sort-table="eksUpload" data-sort-col="univ" onclick="sortTable('eksUpload','univ')" class="p-1 text-[11px] font-black text-slate-500 uppercase tracking-wider cursor-pointer select-none hover:bg-slate-100 transition-colors" title="Klik untuk urutkan">Universitas<span class="sort-ind ml-0.5 text-[9px]"></span></th>
+                                <th data-sort-table="eksUpload" data-sort-col="jml" onclick="sortTable('eksUpload','jml')" class="p-1 text-[11px] font-black text-slate-500 uppercase tracking-wider text-center w-12 cursor-pointer select-none hover:bg-slate-100 transition-colors" title="Klik untuk urutkan">Jml<span class="sort-ind ml-0.5 text-[9px]"></span></th>
+                                <th data-sort-table="eksUpload" data-sort-col="belum" onclick="sortTable('eksUpload','belum')" class="p-1 text-[11px] font-black text-rose-500 uppercase tracking-wider text-center w-12 cursor-pointer select-none hover:bg-slate-100 transition-colors" title="Klik untuk urutkan">Belum<span class="sort-ind ml-0.5 text-[9px]"></span></th>
+                                <th data-sort-table="eksUpload" data-sort-col="sudah" onclick="sortTable('eksUpload','sudah')" class="p-1 text-[11px] font-black text-emerald-600 uppercase tracking-wider text-center w-12 cursor-pointer select-none hover:bg-slate-100 transition-colors" title="Klik untuk urutkan">Sudah<span class="sort-ind ml-0.5 text-[9px]"></span></th>
+                                <th data-sort-table="eksUpload" data-sort-col="prog" onclick="sortTable('eksUpload','prog')" class="p-1 text-[11px] font-black text-slate-500 uppercase tracking-wider text-center w-16 cursor-pointer select-none hover:bg-slate-100 transition-colors" title="Klik untuk urutkan">Prog<span class="sort-ind ml-0.5 text-[9px]"></span></th>
                             </tr>
                         </thead>
                         <tbody id="table-eksisting-upload-body" class="divide-y divide-slate-50"></tbody>
@@ -351,11 +351,11 @@
                     <table class="w-full text-left border-collapse">
                         <thead class="sticky top-0 z-10 bg-slate-50 shadow-sm">
                             <tr class="border-b border-slate-100">
-                                <th class="p-1 text-[11px] font-black text-slate-500 uppercase tracking-wider">Universitas</th>
-                                <th class="p-1 text-[11px] font-black text-slate-500 uppercase tracking-wider text-center w-12">Jml</th>
-                                <th class="p-1 text-[11px] font-black text-orange-500 uppercase tracking-wider text-center w-12">Belum</th>
-                                <th class="p-1 text-[11px] font-black text-blue-600 uppercase tracking-wider text-center w-12">Sudah</th>
-                                <th class="p-1 text-[11px] font-black text-slate-500 uppercase tracking-wider text-center w-16">Prog</th>
+                                <th data-sort-table="eksVerif" data-sort-col="univ" onclick="sortTable('eksVerif','univ')" class="p-1 text-[11px] font-black text-slate-500 uppercase tracking-wider cursor-pointer select-none hover:bg-slate-100 transition-colors" title="Klik untuk urutkan">Universitas<span class="sort-ind ml-0.5 text-[9px]"></span></th>
+                                <th data-sort-table="eksVerif" data-sort-col="jml" onclick="sortTable('eksVerif','jml')" class="p-1 text-[11px] font-black text-slate-500 uppercase tracking-wider text-center w-12 cursor-pointer select-none hover:bg-slate-100 transition-colors" title="Klik untuk urutkan">Jml<span class="sort-ind ml-0.5 text-[9px]"></span></th>
+                                <th data-sort-table="eksVerif" data-sort-col="belum" onclick="sortTable('eksVerif','belum')" class="p-1 text-[11px] font-black text-orange-500 uppercase tracking-wider text-center w-12 cursor-pointer select-none hover:bg-slate-100 transition-colors" title="Klik untuk urutkan">Belum<span class="sort-ind ml-0.5 text-[9px]"></span></th>
+                                <th data-sort-table="eksVerif" data-sort-col="sudah" onclick="sortTable('eksVerif','sudah')" class="p-1 text-[11px] font-black text-blue-600 uppercase tracking-wider text-center w-12 cursor-pointer select-none hover:bg-slate-100 transition-colors" title="Klik untuk urutkan">Sudah<span class="sort-ind ml-0.5 text-[9px]"></span></th>
+                                <th data-sort-table="eksVerif" data-sort-col="prog" onclick="sortTable('eksVerif','prog')" class="p-1 text-[11px] font-black text-slate-500 uppercase tracking-wider text-center w-16 cursor-pointer select-none hover:bg-slate-100 transition-colors" title="Klik untuk urutkan">Prog<span class="sort-ind ml-0.5 text-[9px]"></span></th>
                             </tr>
                         </thead>
                         <tbody id="table-eksisting-verif-body" class="divide-y divide-slate-50"></tbody>
@@ -370,11 +370,11 @@
                     <table class="w-full text-left border-collapse">
                         <thead class="sticky top-0 z-10 bg-slate-50 shadow-sm">
                             <tr class="border-b border-slate-100">
-                                <th class="p-1 text-[11px] font-black text-slate-500 uppercase tracking-wider">Universitas</th>
-                                <th class="p-1 text-[11px] font-black text-slate-500 uppercase tracking-wider text-center w-12">Jml</th>
-                                <th class="p-1 text-[11px] font-black text-orange-500 uppercase tracking-wider text-center w-12">Belum</th>
-                                <th class="p-1 text-[11px] font-black text-blue-600 uppercase tracking-wider text-center w-12">Sudah</th>
-                                <th class="p-1 text-[11px] font-black text-slate-500 uppercase tracking-wider text-center w-16">Prog</th>
+                                <th data-sort-table="baruVerif" data-sort-col="univ" onclick="sortTable('baruVerif','univ')" class="p-1 text-[11px] font-black text-slate-500 uppercase tracking-wider cursor-pointer select-none hover:bg-slate-100 transition-colors" title="Klik untuk urutkan">Universitas<span class="sort-ind ml-0.5 text-[9px]"></span></th>
+                                <th data-sort-table="baruVerif" data-sort-col="jml" onclick="sortTable('baruVerif','jml')" class="p-1 text-[11px] font-black text-slate-500 uppercase tracking-wider text-center w-12 cursor-pointer select-none hover:bg-slate-100 transition-colors" title="Klik untuk urutkan">Jml<span class="sort-ind ml-0.5 text-[9px]"></span></th>
+                                <th data-sort-table="baruVerif" data-sort-col="belum" onclick="sortTable('baruVerif','belum')" class="p-1 text-[11px] font-black text-orange-500 uppercase tracking-wider text-center w-12 cursor-pointer select-none hover:bg-slate-100 transition-colors" title="Klik untuk urutkan">Belum<span class="sort-ind ml-0.5 text-[9px]"></span></th>
+                                <th data-sort-table="baruVerif" data-sort-col="sudah" onclick="sortTable('baruVerif','sudah')" class="p-1 text-[11px] font-black text-blue-600 uppercase tracking-wider text-center w-12 cursor-pointer select-none hover:bg-slate-100 transition-colors" title="Klik untuk urutkan">Sudah<span class="sort-ind ml-0.5 text-[9px]"></span></th>
+                                <th data-sort-table="baruVerif" data-sort-col="prog" onclick="sortTable('baruVerif','prog')" class="p-1 text-[11px] font-black text-slate-500 uppercase tracking-wider text-center w-16 cursor-pointer select-none hover:bg-slate-100 transition-colors" title="Klik untuk urutkan">Prog<span class="sort-ind ml-0.5 text-[9px]"></span></th>
                             </tr>
                         </thead>
                         <tbody id="table-baru-verif-body" class="divide-y divide-slate-50"></tbody>
@@ -803,54 +803,90 @@
         }
 
         let globalKampusData = {};
+
+        // State sort tiap tabel: col = kolom aktif (null = urutan asli), dir = 'desc' | 'asc'
+        const tableSortState = {
+            eksUpload: { col: null, dir: 'desc' },
+            eksVerif:  { col: null, dir: 'desc' },
+            baruVerif: { col: null, dir: 'desc' }
+        };
+
+        // Klik 1 = tertinggi dulu (desc), klik 2 = terkecil (asc), klik 3 = tertinggi lagi, dst.
+        // Khusus kolom Universitas (teks): klik 1 = A-Z, klik 2 = Z-A.
+        function sortTable(tbl, col) {
+            const st = tableSortState[tbl];
+            if (st.col === col) {
+                st.dir = (st.dir === 'desc') ? 'asc' : 'desc';
+            } else {
+                st.col = col;
+                st.dir = (col === 'univ') ? 'asc' : 'desc';
+            }
+            renderTables();
+        }
+
         function renderTables() {
-            const tEksUpload = document.getElementById('table-eksisting-upload-body');
-            const tEksVerif = document.getElementById('table-eksisting-verif-body');
-            const tBaruVerif = document.getElementById('table-baru-verif-body');
-            
-            if (!tEksUpload || !tEksVerif || !tBaruVerif) return;
+            const tableCfg = {
+                eksUpload: {
+                    bodyId: 'table-eksisting-upload-body',
+                    belumCls: 'text-rose-600', sudahCls: 'text-emerald-600', progCls: 'text-blue-600',
+                    getData: (k) => { const d = k.eksisting; return { jml: d.penerima, belum: d.uploadBelum, sudah: d.uploadSudah }; }
+                },
+                eksVerif: {
+                    bodyId: 'table-eksisting-verif-body',
+                    belumCls: 'text-orange-500', sudahCls: 'text-blue-600', progCls: 'text-emerald-600',
+                    getData: (k) => { const d = k.eksisting; return { jml: d.penerima, belum: d.verifBelum, sudah: d.verifSudah }; }
+                },
+                baruVerif: {
+                    bodyId: 'table-baru-verif-body',
+                    belumCls: 'text-orange-500', sudahCls: 'text-blue-600', progCls: 'text-emerald-600',
+                    getData: (k) => { const d = k.baru; return { jml: d.penerima, belum: d.verifBelum, sudah: d.verifSudah }; }
+                }
+            };
 
-            tEksUpload.innerHTML = '';
-            tEksVerif.innerHTML = '';
-            tBaruVerif.innerHTML = '';
+            Object.keys(tableCfg).forEach(tbl => {
+                const cfg = tableCfg[tbl];
+                const body = document.getElementById(cfg.bodyId);
+                if (!body) return;
 
-            Object.keys(globalKampusData).forEach(univ => {
-                const eks = globalKampusData[univ].eksisting;
-                const bar = globalKampusData[univ].baru;
+                // Susun baris + nilai progres numerik (untuk sorting)
+                const rows = Object.keys(globalKampusData).map(univ => {
+                    const d = cfg.getData(globalKampusData[univ]);
+                    const prog = d.jml > 0 ? (d.sudah / d.jml) * 100 : 0;
+                    return { univ, jml: d.jml, belum: d.belum, sudah: d.sudah, prog };
+                });
 
-                const pUpEks = eks.penerima > 0 ? ((eks.uploadSudah / eks.penerima) * 100).toFixed(1) : 0;
-                const pVerEks = eks.penerima > 0 ? ((eks.verifSudah / eks.penerima) * 100).toFixed(1) : 0;
-                const pVerBaru = bar.penerima > 0 ? ((bar.verifSudah / bar.penerima) * 100).toFixed(1) : 0;
+                // Sorting
+                const st = tableSortState[tbl];
+                if (st.col) {
+                    const mul = st.dir === 'desc' ? -1 : 1;
+                    rows.sort((x, y) => {
+                        let cmp;
+                        if (st.col === 'univ') {
+                            cmp = x.univ.localeCompare(y.univ, 'id');
+                        } else {
+                            cmp = x[st.col] - y[st.col];
+                            if (cmp === 0) return x.univ.localeCompare(y.univ, 'id'); // seri -> urut nama A-Z
+                        }
+                        return cmp * mul;
+                    });
+                }
 
-                // 1. Status Upload Eksisting
-                tEksUpload.insertAdjacentHTML('beforeend', `
+                // Render
+                body.innerHTML = rows.map(r => `
                     <tr class="hover:bg-slate-50 border-b border-slate-50 h-7">
-                        <td class="py-1 px-2 leading-none text-[11px] font-bold text-slate-700 uppercase break-words">${univ}</td>
-                        <td class="py-1 px-1 leading-none text-[11px] font-black text-center">${eks.penerima}</td>
-                        <td class="py-1 px-1 leading-none text-[11px] font-black text-rose-600 text-center">${eks.uploadBelum}</td>
-                        <td class="py-1 px-1 leading-none text-[11px] font-black text-emerald-600 text-center">${eks.uploadSudah}</td>
-                        <td class="py-1 px-1 leading-none text-center"><span class="text-[11px] font-black text-blue-600">${pUpEks}%</span></td>
-                    </tr>`);
+                        <td class="py-1 px-2 leading-none text-[11px] font-bold text-slate-700 uppercase break-words">${r.univ}</td>
+                        <td class="py-1 px-1 leading-none text-[11px] font-black text-center">${r.jml}</td>
+                        <td class="py-1 px-1 leading-none text-[11px] font-black ${cfg.belumCls} text-center">${r.belum}</td>
+                        <td class="py-1 px-1 leading-none text-[11px] font-black ${cfg.sudahCls} text-center">${r.sudah}</td>
+                        <td class="py-1 px-1 leading-none text-center"><span class="text-[11px] font-black ${cfg.progCls}">${r.prog.toFixed(1)}%</span></td>
+                    </tr>`).join('');
 
-                // 2. Status Verifikasi Eksisting
-                tEksVerif.insertAdjacentHTML('beforeend', `
-                    <tr class="hover:bg-slate-50 border-b border-slate-50 h-7">
-                        <td class="py-1 px-2 leading-none text-[11px] font-bold text-slate-700 uppercase break-words">${univ}</td>
-                        <td class="py-1 px-1 leading-none text-[11px] font-black text-center">${eks.penerima}</td>
-                        <td class="py-1 px-1 leading-none text-[11px] font-black text-orange-500 text-center">${eks.verifBelum}</td>
-                        <td class="py-1 px-1 leading-none text-[11px] font-black text-blue-600 text-center">${eks.verifSudah}</td>
-                        <td class="py-1 px-1 leading-none text-center"><span class="text-[11px] font-black text-emerald-600">${pVerEks}%</span></td>
-                    </tr>`);
-
-                // 3. Status Verifikasi Penerima Baru
-                tBaruVerif.insertAdjacentHTML('beforeend', `
-                    <tr class="hover:bg-slate-50 border-b border-slate-50 h-7">
-                        <td class="py-1 px-2 leading-none text-[11px] font-bold text-slate-700 uppercase break-words">${univ}</td>
-                        <td class="py-1 px-1 leading-none text-[11px] font-black text-center">${bar.penerima}</td>
-                        <td class="py-1 px-1 leading-none text-[11px] font-black text-orange-500 text-center">${bar.verifBelum}</td>
-                        <td class="py-1 px-1 leading-none text-[11px] font-black text-blue-600 text-center">${bar.verifSudah}</td>
-                        <td class="py-1 px-1 leading-none text-center"><span class="text-[11px] font-black text-emerald-600">${pVerBaru}%</span></td>
-                    </tr>`);
+                // Indikator panah di header (▼ tertinggi dulu, ▲ terkecil dulu)
+                document.querySelectorAll(`th[data-sort-table="${tbl}"]`).forEach(th => {
+                    const ind = th.querySelector('.sort-ind');
+                    if (!ind) return;
+                    ind.textContent = (st.col === th.dataset.sortCol) ? (st.dir === 'desc' ? '▼' : '▲') : '';
+                });
             });
         }
 
