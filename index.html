@@ -133,8 +133,8 @@
                             Kartu Jakarta Mahasiswa Unggul Tahap 2 Tahun 2026
                         </h2>
                         <span class="hidden md:block text-slate-300">|</span>
-                        <span class="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-1 rounded-md">
-                            Update 3 Oktober 2026 pukul 10.45 WIB
+                        <span id="last-update-text" class="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-1 rounded-md">
+                            Memuat data...
                         </span>
                     </div>
                 </div>
@@ -591,12 +591,40 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        async function updateStats() {
+        // ====== AUTO UPDATE LABEL "Update ... WIB" ======
+        const REFRESH_INTERVAL_MS = 5 * 60 * 1000; // cek perubahan data tiap 5 menit
+        let lastStatsSignature = null;
+        let isUpdatingStats = false;
+        let lastCheckTime = 0;
+
+        function formatUpdateLabel(date) {
+            const tgl = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' });
+            const jam = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' });
+            return `Update ${tgl} pukul ${jam} WIB`;
+        }
+
+        function setLastUpdate(date) {
+            const el = document.getElementById('last-update-text');
+            if (el) el.innerText = formatUpdateLabel(date);
+        }
+
+        function startAutoRefresh() {
+            setInterval(() => { if (!document.hidden) updateStats(true); }, REFRESH_INTERVAL_MS);
+            // Kalau tab baru dibuka lagi setelah lama, langsung cek
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden && Date.now() - lastCheckTime > REFRESH_INTERVAL_MS) updateStats(true);
+            });
+        }
+
+        async function updateStats(isRefresh = false) {
+            if (isUpdatingStats) return;
+            isUpdatingStats = true;
             try {
                 let allStats = [];
                 let keepFetching = true;
                 let from = 0;
                 const step = 1000;
+                let fetchFailed = false;
 
                 while (keepFetching) {
                     const { data, error } = await supabaseClient
@@ -604,7 +632,7 @@
                         .select('NAMA_UNIVERSITAS, JenisPT, nm_status, Kategori, JENIS_PENERIMA, Jenjang') 
                         .range(from, from + step - 1);
 
-                    if (error) break;
+                    if (error) { fetchFailed = true; break; }
                     if (data && data.length > 0) {
                         allStats = [...allStats, ...data];
                         from += step;
@@ -613,6 +641,9 @@
                         keepFetching = false;
                     }
                 }
+
+                // Saat refresh otomatis, kalau ada error fetch jangan timpa tampilan dengan data parsial
+                if (fetchFailed && isRefresh) return;
 
                 if (allStats.length === 0) {
                     const loaderEmpty = document.getElementById('global-loader');
@@ -790,6 +821,17 @@
 
                 globalKampusData = kampusMap; 
                 renderTables(); 
+
+                // Deteksi perubahan data (urutan baris tidak berpengaruh) -> perbarui label waktu
+                const signature = JSON.stringify([
+                    Object.keys(kampusMap).sort().map(k => [k, kampusMap[k]]),
+                    stats.eksisting.jenjang, stats.baru.jenjang, stats.keseluruhan
+                ]);
+                if (signature !== lastStatsSignature) {
+                    lastStatsSignature = signature;
+                    setLastUpdate(new Date());
+                }
+                lastCheckTime = Date.now();
                 
                 const loader = document.getElementById('global-loader');
                 if (loader) {
@@ -799,6 +841,8 @@
             } catch (err) {
                 const loader = document.getElementById('global-loader');
                 if (loader) loader.style.display = 'none';
+            } finally {
+                isUpdatingStats = false;
             }
         }
 
@@ -829,16 +873,22 @@
                 eksUpload: {
                     bodyId: 'table-eksisting-upload-body',
                     belumCls: 'text-rose-600', sudahCls: 'text-emerald-600', progCls: 'text-blue-600',
+                    // Hanya kampus yang punya mahasiswa berkategori Eksisting
+                    hasData: (k) => k.eksisting.penerima > 0,
                     getData: (k) => { const d = k.eksisting; return { jml: d.penerima, belum: d.uploadBelum, sudah: d.uploadSudah }; }
                 },
                 eksVerif: {
                     bodyId: 'table-eksisting-verif-body',
                     belumCls: 'text-orange-500', sudahCls: 'text-blue-600', progCls: 'text-emerald-600',
+                    // Hanya kampus yang punya mahasiswa berkategori Eksisting
+                    hasData: (k) => k.eksisting.penerima > 0,
                     getData: (k) => { const d = k.eksisting; return { jml: d.penerima, belum: d.verifBelum, sudah: d.verifSudah }; }
                 },
                 baruVerif: {
                     bodyId: 'table-baru-verif-body',
                     belumCls: 'text-orange-500', sudahCls: 'text-blue-600', progCls: 'text-emerald-600',
+                    // Hanya kampus yang punya mahasiswa berkategori Baru
+                    hasData: (k) => k.baru.penerima > 0,
                     getData: (k) => { const d = k.baru; return { jml: d.penerima, belum: d.verifBelum, sudah: d.verifSudah }; }
                 }
             };
@@ -849,7 +899,7 @@
                 if (!body) return;
 
                 // Susun baris + nilai progres numerik (untuk sorting)
-                const rows = Object.keys(globalKampusData).map(univ => {
+                const rows = Object.keys(globalKampusData).filter(univ => cfg.hasData(globalKampusData[univ])).map(univ => {
                     const d = cfg.getData(globalKampusData[univ]);
                     const prog = d.jml > 0 ? (d.sudah / d.jml) * 100 : 0;
                     return { univ, jml: d.jml, belum: d.belum, sudah: d.sudah, prog };
@@ -872,7 +922,9 @@
                 }
 
                 // Render
-                body.innerHTML = rows.map(r => `
+                if (rows.length === 0) {
+                    body.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-[11px] font-bold text-slate-400 uppercase tracking-widest">Belum ada data</td></tr>`;
+                } else body.innerHTML = rows.map(r => `
                     <tr class="hover:bg-slate-50 border-b border-slate-50 h-7">
                         <td class="py-1 px-2 leading-none text-[11px] font-bold text-slate-700 uppercase break-words">${r.univ}</td>
                         <td class="py-1 px-1 leading-none text-[11px] font-black text-center">${r.jml}</td>
@@ -1063,6 +1115,7 @@
             if(dateEl) dateEl.innerText = today;
 
             updateStats(); 
+            startAutoRefresh();
             startCountdown();
 
             const savedUniv = localStorage.getItem('loggedInUniv');
